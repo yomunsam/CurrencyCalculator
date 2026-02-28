@@ -98,12 +98,23 @@ h1:focus { outline: none; }
     box-shadow: var(--cc-shadow-active);
 }
 
-.cc-row .currency-icon {
-    font-size: 1.55rem;
+.cc-row .currency-flag {
+    width: 28px;
+    height: 20px;
+    border-radius: 3px;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+}
+
+.cc-row .currency-icon-crypto {
+    font-size: 1.45rem;
     line-height: 1;
     flex-shrink: 0;
-    width: 2rem;
+    width: 28px;
     text-align: center;
+    font-weight: 700;
+    color: var(--cc-accent);
 }
 
 .cc-row .currency-info {
@@ -239,10 +250,22 @@ h1:focus { outline: none; }
     background: var(--cc-surface-hover);
 }
 
-.cc-selector-item .si-icon {
-    font-size: 1.3rem;
-    width: 1.8rem;
-    text-align: center;
+.cc-selector-item .si-flag {
+    width: 28px;
+    height: 20px;
+    border-radius: 3px;
+    object-fit: cover;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+}
+
+.cc-selector-item .si-crypto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    width: 28px;
+    color: var(--cc-accent);
 }
 
 .cc-selector-item .si-code {
@@ -282,16 +305,79 @@ h1:focus { outline: none; }
     pointer-events: none;
 }
 
-/* ── Footer info bar ────────────────────────────────────────────── */
-.cc-footer-info {
-    font-size: .78rem;
-    color: var(--cc-text-secondary);
+/* ── Footer ──────────────────────────────────────────────────────── */
+.cc-footer {
     text-align: center;
     padding: .5rem 0;
 }
 
+.cc-footer-info {
+    font-size: .78rem;
+    color: var(--cc-text-secondary);
+}
+
 .cc-footer-info .stale {
     color: var(--cc-danger);
+}
+
+.cc-footer-actions {
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.footer-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    font-size: .8rem;
+    padding: .3rem .65rem;
+    border-radius: 8px;
+    border: 1px solid var(--cc-border);
+    background: var(--cc-surface);
+    color: var(--cc-text-secondary);
+    cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+}
+
+.footer-btn:hover {
+    border-color: var(--cc-accent);
+    color: var(--cc-accent);
+}
+
+.footer-btn:disabled {
+    opacity: .4;
+    pointer-events: none;
+}
+
+.footer-btn.refreshing i {
+    animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.cc-copyright {
+    font-size: .7rem;
+    color: var(--cc-text-secondary);
+    opacity: .6;
+}
+
+/* ── Ad slot placeholders ───────────────────────────────────────── */
+.cc-ad-slot {
+    min-height: 50px;
+    background: var(--cc-surface);
+    border: 1px dashed var(--cc-border);
+    border-radius: 10px;
+    margin: .5rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    color: var(--cc-text-secondary);
 }
 
 /* ── Toast ──────────────────────────────────────────────────────── */
@@ -367,24 +453,6 @@ h1:focus { outline: none; }
     cursor: pointer;
     padding: 0;
     line-height: 1;
-}
-
-/* ── Language button ────────────────────────────────────────────── */
-.lang-btn {
-    font-size: .82rem;
-    font-weight: 600;
-    padding: .15rem .5rem;
-    border-radius: 8px;
-    border: 1px solid var(--cc-border);
-    background: var(--cc-surface);
-    color: var(--cc-text);
-    cursor: pointer;
-    transition: border-color .15s, background .15s;
-}
-
-.lang-btn:hover {
-    border-color: var(--cc-accent);
-    color: var(--cc-accent);
 }
 
 /* ── Loading / errors ───────────────────────────────────────────── */

@@ -6,33 +6,21 @@
 
 <PageTitle>@L("AppTitle")</PageTitle>
 
-@* ════════ Header ════════ *@
+@* ════════ Header (title + dark mode only) ════════ *@
 <header class="app-header">
-    <div class="d-flex align-items-center justify-content-between px-2 py-2">
+    <div class="d-flex align-items-center justify-content-center px-2 py-2 position-relative">
         <span class="header-title">@L("AppTitle")</span>
-        <div class="d-flex align-items-center gap-1">
-            @* Language toggle *@
-            <button class="lang-btn" @onclick="CycleLanguageAsync" title="@L("Language")">
-                @GetLanguageLabel()
-            </button>
-            @* Dark mode toggle *@
-            <button class="header-btn" @onclick="ToggleThemeAsync"
-                    title="Toggle theme">
-                <i class="bi @(IsDarkMode ? "bi-sun" : "bi-moon")"></i>
-            </button>
-            @* Refresh *@
-            <button class="header-btn" @onclick="RefreshRatesAsync" disabled="@IsLoading"
-                    title="@L("Refresh")">
-                <i class="bi bi-arrow-clockwise @(IsLoading ? "spin" : "")"></i>
-            </button>
-            @* About *@
-            <button class="header-btn" @onclick="() => ShowAbout = true"
-                    title="@L("AboutTitle")">
-                <i class="bi bi-info-circle"></i>
-            </button>
-        </div>
+        <button class="header-btn position-absolute" style="right:.5rem;"
+                @onclick="ToggleThemeAsync" title="Toggle theme">
+            <i class="bi @(IsDarkMode ? "bi-sun" : "bi-moon")"></i>
+        </button>
     </div>
 </header>
+
+@* ════════ Ad banner placeholder (top) — hidden by default ════════ *@
+<div class="cc-ad-slot cc-ad-top d-none" aria-hidden="true">
+    <!-- Ad banner top -->
+</div>
 
 @* ════════ Subtitle ════════ *@
 <p class="text-center mt-2 mb-3" style="font-size:.8rem;color:var(--cc-text-secondary);">
@@ -58,8 +46,16 @@
         <div class="cc-row @(isActive ? "is-active" : "")"
              @onclick="() => SetActiveIndex(rowIndex)">
 
-            @* Icon *@
-            <span class="currency-icon">@currency.Icon</span>
+            @* Icon — flag image for fiat, styled text for crypto *@
+            @if (currency.Kind == CurrencyKind.Fiat)
+            {
+                <img class="currency-flag" src="https://flagcdn.com/w40/@(currency.Icon).png"
+                     alt="@currency.Code" loading="lazy" />
+            }
+            else
+            {
+                <span class="currency-icon-crypto">@currency.Icon</span>
+            }
 
             @* Code + Name area — clicking code opens selector *@
             <div class="currency-info" style="width:4.5rem;">
@@ -99,14 +95,19 @@
     </button>
 </section>
 
-@* ════════ Footer info ════════ *@
-<footer class="cc-footer-info mt-3 mb-2">
+@* ════════ Ad banner placeholder (bottom) — hidden by default ════════ *@
+<div class="cc-ad-slot cc-ad-bottom d-none" aria-hidden="true">
+    <!-- Ad banner bottom -->
+</div>
+
+@* ════════ Footer ════════ *@
+<footer class="cc-footer mt-3 mb-2">
+    @* Rate info *@
     @if (LatestSnapshot is not null)
     {
         var isGlobalStale = IsGlobalStale();
-        <div>
-            <span>@L("RateSource"): </span>
-            <span class="fw-semibold">@GetSourceLabel()</span>
+        <div class="cc-footer-info">
+            <span>@L("RateSource"): <b>@GetSourceLabel()</b></span>
             <span class="mx-1">·</span>
             <span class="@(isGlobalStale ? "stale fw-semibold" : "")">
                 @L("UpdatedAt"): @LatestSnapshot.FetchedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")
@@ -114,13 +115,28 @@
         </div>
         @if (isGlobalStale)
         {
-            <small class="stale">@L("StaleWarning")</small>
+            <div class="cc-footer-info stale">@L("StaleWarning")</div>
         }
     }
-    else
-    {
-        <span>—</span>
-    }
+
+    @* Action buttons *@
+    <div class="cc-footer-actions mt-2">
+        <button class="footer-btn" @onclick="CycleLanguageAsync" title="@L("Language")">
+            <i class="bi bi-translate"></i>
+            <span>@GetLanguageLabel()</span>
+        </button>
+        <button class="footer-btn @(IsRefreshing ? "refreshing" : "")" @onclick="RefreshRatesAsync" disabled="@IsLoading" title="@L("Refresh")">
+            <i class="bi bi-arrow-clockwise"></i>
+            <span>@L("Refresh")</span>
+        </button>
+        <button class="footer-btn" @onclick="() => ShowAbout = true" title="@L("AboutTitle")">
+            <i class="bi bi-info-circle"></i>
+            <span>@L("AboutTitle")</span>
+        </button>
+    </div>
+
+    @* Copyright *@
+    <div class="cc-copyright mt-2">@L("Copyright")</div>
 </footer>
 
 @* ════════ Currency Selector Overlay ════════ *@
@@ -131,7 +147,14 @@
             @foreach (var item in CurrencyCatalog.Items)
             {
                 <button class="cc-selector-item" @onclick="() => SelectCurrencyAsync(item.Code)">
-                    <span class="si-icon">@item.Icon</span>
+                    @if (item.Kind == CurrencyKind.Fiat)
+                    {
+                        <img class="si-flag" src="https://flagcdn.com/w40/@(item.Icon).png" alt="@item.Code" loading="lazy" />
+                    }
+                    else
+                    {
+                        <span class="si-crypto">@item.Icon</span>
+                    }
                     <span class="si-code">@item.Code</span>
                     <span class="si-name">@item.GetName(CurrentLanguage)</span>
                 </button>
@@ -149,7 +172,7 @@
             <h2>@L("AboutTitle")</h2>
             <p style="font-size:.9rem;">@L("AboutDescription")</p>
             <p style="font-size:.85rem;color:var(--cc-text-secondary);">
-                <i class="bi bi-person me-1"></i>@L("AboutDeveloper"): Open Source Contributors
+                <i class="bi bi-person me-1"></i>@L("AboutDeveloper"): Yomu
             </p>
             <a href="https://github.com" target="_blank" rel="noreferrer"
                style="font-size:.85rem;">
@@ -166,6 +189,7 @@
     private ExchangeRatesSnapshot? LatestSnapshot { get; set; }
     private int ActiveIndex { get; set; }
     private bool IsLoading { get; set; }
+    private bool IsRefreshing { get; set; }
     private string? ErrorMessage { get; set; }
     private bool IsDarkMode { get; set; }
     private bool ShowAbout { get; set; }
@@ -203,9 +227,28 @@
     // ── Rates ──────────────────────────────────────────────────────────
     private async Task RefreshRatesAsync()
     {
+        IsRefreshing = true;
+        StateHasChanged();
         await LoadRatesAsync(forceRefresh: true);
         RecalculateFromActive();
         await SavePreferencesAsync();
+
+        // Toast feedback
+        if (string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            await JS.InvokeVoidAsync("ccToast.show", L("RefreshSuccess"), 2000);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("ccToast.show", L("RefreshFailed"), 3000);
+        }
+
+        // Keep animation for a brief moment so user sees it
+        _ = Task.Delay(600).ContinueWith(_ =>
+        {
+            IsRefreshing = false;
+            InvokeAsync(StateHasChanged);
+        });
     }
 
     private async Task LoadRatesAsync(bool forceRefresh)
@@ -400,6 +443,7 @@
     private System.Globalization.CultureInfo GetCultureForLanguage() => CurrentLanguage switch
     {
         "zh-CN" => new System.Globalization.CultureInfo("zh-CN"),
+        "ja-JP" => new System.Globalization.CultureInfo("ja-JP"),
         "en-US" => new System.Globalization.CultureInfo("en-US"),
         _ => System.Globalization.CultureInfo.InvariantCulture
     };

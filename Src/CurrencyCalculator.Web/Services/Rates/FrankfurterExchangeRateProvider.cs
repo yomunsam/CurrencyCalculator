@@ -52,18 +52,10 @@ public sealed class FrankfurterExchangeRateProvider(HttpClient httpClient, ILogg
                 return ProviderFetchResult.Fail("No supported rates found in Frankfurter response.");
             }
 
-            var fetchedAtUtc = DateTimeOffset.UtcNow;
-            if (root.TryGetProperty("date", out var dateValue) &&
-                dateValue.ValueKind == JsonValueKind.String &&
-                DateTimeOffset.TryParse(dateValue.GetString(), out var parsedDate))
-            {
-                fetchedAtUtc = parsedDate.ToUniversalTime();
-            }
-
             return ProviderFetchResult.Ok(new ExchangeRatesSnapshot
             {
                 BaseCurrency = "USD",
-                FetchedAtUtc = fetchedAtUtc,
+                FetchedAtUtc = DateTimeOffset.UtcNow,
                 Source = Name,
                 SourceKind = ExchangeRatesSourceKind.LiveApi,
                 RatesFromBase = rates

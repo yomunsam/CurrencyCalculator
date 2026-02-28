@@ -51,18 +51,12 @@ public sealed class FawazExchangeApiProvider(HttpClient httpClient, ILogger<Fawa
                 return ProviderFetchResult.Fail("No supported rates found in fawaz response.");
             }
 
-            var fetchedAtUtc = DateTimeOffset.UtcNow;
-            if (root.TryGetProperty("date", out var dateValue) &&
-                dateValue.ValueKind == JsonValueKind.String &&
-                DateTimeOffset.TryParse(dateValue.GetString(), out var parsedDate))
-            {
-                fetchedAtUtc = parsedDate.ToUniversalTime();
-            }
-
+            // Always use current time for staleness detection.
+            // The API 'date' field is the rate reference date, not fetch time.
             return ProviderFetchResult.Ok(new ExchangeRatesSnapshot
             {
                 BaseCurrency = "USD",
-                FetchedAtUtc = fetchedAtUtc,
+                FetchedAtUtc = DateTimeOffset.UtcNow,
                 Source = Name,
                 SourceKind = ExchangeRatesSourceKind.LiveApi,
                 RatesFromBase = rates

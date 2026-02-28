@@ -15,8 +15,8 @@ public sealed class LocalizationService(
     public static readonly IReadOnlyList<LanguageEntry> Languages =
     [
         new("en-US", "English", ["USD", "CNY"]),
-        new("zh-CN", "简体中文", ["CNY", "USD"])
-        // To add Japanese: new("ja-JP", "日本語", ["JPY", "USD"])
+        new("zh-CN", "简体中文", ["CNY", "USD"]),
+        new("ja-JP", "日本語", ["JPY", "USD"])
     ];
 
     public static IReadOnlyCollection<string> SupportedLanguages { get; } =
@@ -48,7 +48,10 @@ public sealed class LocalizationService(
             ["AboutDescription"] = "A lightweight PWA currency calculator built with Blazor WebAssembly. Rates from fawazahmed0/exchange-api & Frankfurter.",
             ["AboutDeveloper"] = "Developer",
             ["AboutGitHub"] = "GitHub Repository",
-            ["Close"] = "Close"
+            ["Close"] = "Close",
+            ["RefreshSuccess"] = "Rates updated",
+            ["RefreshFailed"] = "Failed to update rates",
+            ["Copyright"] = "Copyright © 2026 Yomu"
         },
         ["zh-CN"] = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -73,7 +76,38 @@ public sealed class LocalizationService(
             ["AboutDescription"] = "基于 Blazor WebAssembly 的轻量级 PWA 汇率计算器。数据来自 fawazahmed0/exchange-api 与 Frankfurter。",
             ["AboutDeveloper"] = "开发者",
             ["AboutGitHub"] = "GitHub 仓库",
-            ["Close"] = "关闭"
+            ["Close"] = "关闭",
+            ["RefreshSuccess"] = "汇率已更新",
+            ["RefreshFailed"] = "更新汇率失败",
+            ["Copyright"] = "Copyright © 2026 Yomu"
+        },
+        ["ja-JP"] = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["AppTitle"] = "為替計算機",
+            ["AppSubtitle"] = "リアルタイム多通貨比較・オフラインフォールバック対応",
+            ["Live"] = "リアルタイム",
+            ["Cache"] = "キャッシュ",
+            ["Fallback"] = "フォールバック",
+            ["AddItem"] = "追加",
+            ["Remove"] = "削除",
+            ["Refresh"] = "更新",
+            ["Language"] = "言語",
+            ["FocusedBaseHint"] = "行をタップして基準通貨に設定",
+            ["UpdatedAt"] = "更新日時",
+            ["RateSource"] = "データソース",
+            ["Unavailable"] = "レートなし",
+            ["LoadFailed"] = "すべてのデータソースからレートを取得できませんでした。",
+            ["DuplicateCurrency"] = "重複した通貨が追加されました — レートは1:1になります",
+            ["StaleWarning"] = "キャッシュされたレートは古くなっています。参考値です。",
+            ["CryptoStaleWarning"] = "暗号資産レートが古い可能性があります（>1時間）",
+            ["AboutTitle"] = "このアプリについて",
+            ["AboutDescription"] = "Blazor WebAssembly で構築された軽量PWA為替計算機。レートは fawazahmed0/exchange-api と Frankfurter より取得。",
+            ["AboutDeveloper"] = "開発者",
+            ["AboutGitHub"] = "GitHub リポジトリ",
+            ["Close"] = "閉じる",
+            ["RefreshSuccess"] = "レートを更新しました",
+            ["RefreshFailed"] = "レートの更新に失敗しました",
+            ["Copyright"] = "Copyright © 2026 Yomu"
         }
     };
 
