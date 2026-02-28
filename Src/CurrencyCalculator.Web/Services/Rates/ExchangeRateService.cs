@@ -6,7 +6,7 @@ namespace CurrencyCalculator.Web.Services.Rates;
 public sealed class ExchangeRateService(
     IEnumerable<IExchangeRateProvider> providers,
     BrowserStorageService browserStorageService,
-    ILogger<ExchangeRateService> logger)
+    ILogger<ExchangeRateService> _logger)
 {
     public async Task<ExchangeRatesSnapshot> GetLatestAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
@@ -14,6 +14,8 @@ public sealed class ExchangeRateService(
         var onlineProviders = providerList.Where(provider => !provider.IsFallbackProvider).ToArray();
         var fallbackProviders = providerList.Where(provider => provider.IsFallbackProvider).ToArray();
 
+        // Strategy: always try live APIs first.
+        // Only use cache as fresh shortcut when NOT force-refreshing.
         if (!forceRefresh)
         {
             var freshCache = await TryLoadCacheAsync(enforceTtl: true);
@@ -23,30 +25,30 @@ public sealed class ExchangeRateService(
             }
         }
 
+        // Try live online providers
         foreach (var provider in onlineProviders)
         {
             var result = await provider.FetchAsync(cancellationToken);
             if (!result.Success || result.Snapshot is null)
             {
+                _logger.LogWarning("Provider {Provider} failed or returned no data.", provider.Name);
                 continue;
             }
 
             var normalized = EnsureSupportedRates(result.Snapshot);
-            if (!normalized.HasAllRates(CurrencyCatalog.SupportedCodes))
-            {
-                logger.LogInformation("Provider {Provider} did not return full supported currency set.", provider.Name);
-            }
-
             await browserStorageService.SetAsync(AppSettings.RatesCacheStorageKey, normalized);
             return normalized;
         }
 
+        // Fallback 1: any cached data (even stale)
         var anyCache = await TryLoadCacheAsync(enforceTtl: false);
         if (anyCache is not null)
         {
+            _logger.LogInformation("Using stale cached rates.");
             return anyCache;
         }
 
+        // Fallback 2: static fallback JSON (built by GitHub Actions)
         foreach (var provider in fallbackProviders)
         {
             var result = await provider.FetchAsync(cancellationToken);

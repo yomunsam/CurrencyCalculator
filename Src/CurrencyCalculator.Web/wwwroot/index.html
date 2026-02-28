@@ -3,8 +3,9 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CurrencyCalculator.Web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Currency Calculator</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -16,6 +17,15 @@
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
     <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
     <script type="importmap"></script>
+    <script>
+        // Apply theme before first paint to prevent flash
+        (function () {
+            var stored = localStorage.getItem('cc.theme.v1');
+            var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            var dark = stored ? stored === 'dark' : prefersDark;
+            document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
+        })();
+    </script>
 </head>
 
 <body>
@@ -32,15 +42,47 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+
+    <!-- Toast container -->
+    <div id="cc-toast-container" class="cc-toast-container"></div>
+
     <script>
+        // localStorage helpers
         window.ccStorage = {
             get: (key) => window.localStorage.getItem(key),
             set: (key, value) => window.localStorage.setItem(key, value),
             remove: (key) => window.localStorage.removeItem(key)
         };
 
+        // Browser helpers
         window.ccBrowser = {
             getLanguage: () => navigator.language || "en-US"
+        };
+
+        // Theme helpers
+        window.ccTheme = {
+            get: () => document.documentElement.getAttribute('data-bs-theme') || 'light',
+            set: (theme) => {
+                document.documentElement.setAttribute('data-bs-theme', theme);
+                localStorage.setItem('cc.theme.v1', theme);
+            },
+            isDark: () => document.documentElement.getAttribute('data-bs-theme') === 'dark'
+        };
+
+        // Toast helper (pure CSS, no Bootstrap JS)
+        window.ccToast = {
+            show: (message, durationMs) => {
+                var container = document.getElementById('cc-toast-container');
+                var el = document.createElement('div');
+                el.className = 'cc-toast';
+                el.textContent = message;
+                container.appendChild(el);
+                requestAnimationFrame(() => el.classList.add('show'));
+                setTimeout(() => {
+                    el.classList.remove('show');
+                    el.addEventListener('transitionend', () => el.remove());
+                }, durationMs || 3000);
+            }
         };
     </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>

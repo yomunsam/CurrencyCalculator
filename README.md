@@ -1,25 +1,31 @@
 # Currency Calculator
 
-一个基于 **Blazor WebAssembly + PWA + .NET 10** 的静态部署汇率计算器项目。
+一个基于 **Blazor WebAssembly + PWA + .NET 10** 的静态部署汇率计算器。
 
-## 当前能力
+## 特性
 
-- 多币种对比（默认 2 项，可扩展到 5 项）
-- 支持法币与加密货币（USD、CNY、EUR、JPY、GBP、HKD、AUD、CAD、CHF、NZD、BTC、ETH）
-- 以当前输入焦点行为基准货币进行换算
-- 实时汇率优先（fawaz exchange-api，Frankfurter 兜底）
-- 本地缓存与静态 fallback 文件双重回退
-- `en-US` / `zh-CN` 双语，首次访问按浏览器语言设置默认币种
-- `localStorage` 持久化用户对比项、历史输入与语言偏好
+- 🌓 Dark Mode / Light Mode（自动检测系统主题，可手动切换）
+- 💱 多币种对比（2~5 项），焦点行为基准自动换算
+- 🪙 10 法币 + 2 加密币（USD、CNY、EUR、JPY、GBP、HKD、AUD、CAD、CHF、NZD、BTC、ETH）
+- ⚡ 实时汇率优先，失败逐级回退（缓存 → 静态 fallback）
+- ⏰ 过期检测：法币 >24h、加密 >1h 显示警告
+- 🔢 输入支持数学表达式（如 `100*1.2`、`(50+30)/3`）
+- 🌐 en-US / zh-CN 双语，浏览器语言自动匹配
+- 💾 localStorage 持久化偏好与汇率缓存
+- 📱 响应式紧凑卡片布局，移动端友好
+- 🔧 数据驱动架构 — 新增币种/语言只需添加一行配置
 
 ## 项目结构
 
 - `Src/CurrencyCalculator.slnx`：解决方案
 - `Src/CurrencyCalculator.Web`：Blazor WebAssembly PWA 项目
-- `.github/workflows/update-fallback-rates.yml`：低频更新 fallback 汇率
-- `.github/workflows/deploy-github-pages.yml`：GitHub Pages 部署
-- `Docs/项目计划与里程碑.md`：计划与阶段说明
-- `Docs/架构决策记录.md`：关键架构决策
+  - `Core/`：领域模型（CurrencyCatalog、AppSettings、MathExpressionEvaluator）
+  - `Models/`：状态模型（CompareItemState、UserPreferences、ExchangeRatesSnapshot）
+  - `Services/`：业务服务（LocalizationService、BrowserStorageService）
+  - `Services/Rates/`：汇率数据源与编排
+  - `Pages/Home.razor`：单页主界面
+- `.github/workflows/`：GitHub Actions（部署 + fallback 更新）
+- `Docs/`：项目文档
 
 ## 本地运行
 
@@ -28,12 +34,12 @@ dotnet restore Src/CurrencyCalculator.slnx
 dotnet run --project Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj
 ```
 
-## 部署说明
+## 部署
 
 ### GitHub Pages
 
-1. 在仓库 Settings > Pages 中启用 `GitHub Actions`。
-2. 确保默认分支为 `main`，推送后触发 `Deploy Blazor WASM to GitHub Pages`。
+1. 在仓库 Settings → Pages 中启用 `GitHub Actions`。
+2. 推送到 `main` 分支即可触发自动部署。
 
 ### Cloudflare Pages
 
@@ -48,12 +54,15 @@ dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Relea
 ## fallback 汇率更新
 
 - 工作流：`.github/workflows/update-fallback-rates.yml`
-- 默认计划：每周一次（UTC 周一 02:00）
+- 计划：每周一次（UTC 周一 02:00）
 - 脚本：`.github/scripts/update-fallback.ps1`
 - 输出：`Src/CurrencyCalculator.Web/wwwroot/fallback/latest-rates.json`
 
-## 可扩展点
+## 扩展指南
 
-- 新增货币：编辑 `Src/CurrencyCalculator.Web/Core/CurrencyCatalog.cs`
-- 新增数据源：实现 `IExchangeRateProvider` 并在 `Program.cs` 注册
-- 调整对比项上限：编辑 `Src/CurrencyCalculator.Web/Core/AppSettings.cs`
+| 操作 | 位置 | 说明 |
+|------|------|------|
+| 新增货币 | `Core/CurrencyCatalog.cs` | 添加一行 `Fiat()/Crypto()` 定义 |
+| 新增语言 | `Services/LocalizationService.cs` | 添加 `LanguageEntry` + 翻译字典 |
+| 新增数据源 | 实现 `IExchangeRateProvider` | 在 `Program.cs` 注册即可 |
+| 调整阈值 | `Core/AppSettings.cs` | 对比项上限、过期时间等 |
