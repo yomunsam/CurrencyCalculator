@@ -1,0 +1,39 @@
+# IDE / Editor
+**/.vs
+**/.vscode
+**/.idea
+
+# DotNet
+**/[Bb]in/
+**/[Oo]bj/
+*.user
+
+
+
+# Sqlite
+*.db
+*.db-shm
+*.db-wal
+
+# Others
+**/node_modules/
+**/[Bb]uild/
+!Build/
+
+# Log
+Src/**/Logs
+
+# Configurations
+**/appsettings.Development.json
+**/appsettings.Production.json
+**/Configurations/*.Development.json
+**/Configurations/*.Production.json
+
+
+# NUNIT
+*.VisualState.xml
+TestResult.xml
+
+# MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*

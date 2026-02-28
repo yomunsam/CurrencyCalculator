@@ -1,0 +1,8 @@
+.app-shell {
+    min-height: 100vh;
+    background: var(--cc-bg);
+}
+
+.app-header {
+    background: var(--cc-surface);
+}

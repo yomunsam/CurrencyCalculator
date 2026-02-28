@@ -1,0 +1,20 @@
+{
+  "baseCurrency": "USD",
+  "fetchedAtUtc": "2026-02-28T00:00:00Z",
+  "source": "Static Fallback Seed",
+  "sourceKind": 2,
+  "ratesFromBase": {
+    "USD": 1,
+    "CNY": 7.19,
+    "EUR": 0.93,
+    "JPY": 150.8,
+    "GBP": 0.79,
+    "HKD": 7.82,
+    "AUD": 1.53,
+    "CAD": 1.37,
+    "CHF": 0.89,
+    "NZD": 1.66,
+    "BTC": 0.000015,
+    "ETH": 0.00028
+  }
+}

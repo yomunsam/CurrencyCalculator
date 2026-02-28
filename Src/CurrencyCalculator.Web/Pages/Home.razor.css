@@ -1,0 +1,13 @@
+.lang-select {
+    width: 120px;
+}
+
+.compare-row {
+    border-radius: 0.85rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.compare-row.is-active {
+    border: 1px solid rgba(13, 110, 253, 0.35);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1) !important;
+}
