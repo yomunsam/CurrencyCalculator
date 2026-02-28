@@ -2,7 +2,7 @@ name: Deploy Blazor WASM to GitHub Pages
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   workflow_dispatch:
 
 permissions:
@@ -31,6 +31,22 @@ jobs:
 
       - name: Publish
         run: dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Release -o publish
+
+      # ── GitHub Pages: <base href> must match the repository subpath ──
+      # For a repo named "CurrencyCalculator" hosted at username.github.io/CurrencyCalculator/
+      # we must rewrite <base href="/"> to <base href="/CurrencyCalculator/">.
+      # If we're inside a *.github.io repo (root), the subpath stays "/".
+      - name: Rewrite base href for GitHub Pages subpath
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY##*/}"
+          echo "Repository name: $REPO_NAME"
+          # If this is NOT a *.github.io repo, we need to add the subpath
+          if [[ "$REPO_NAME" != *.github.io ]]; then
+            echo "Rewriting base href to /$REPO_NAME/"
+            sed -i "s|<base href=\"/\"|<base href=\"/$REPO_NAME/\"|g" publish/wwwroot/index.html
+          else
+            echo "Root Pages repo detected — base href stays as /"
+          fi
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

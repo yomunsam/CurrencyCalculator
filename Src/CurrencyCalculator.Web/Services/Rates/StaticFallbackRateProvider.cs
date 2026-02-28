@@ -3,6 +3,11 @@ using CurrencyCalculator.Web.Models;
 
 namespace CurrencyCalculator.Web.Services.Rates;
 
+/// <summary>
+/// Last-resort provider that reads a static JSON file (wwwroot/fallback/latest-rates.json)
+/// pre-built and committed by a scheduled GitHub Actions workflow.
+/// Guaranteed to be available offline, but rates may be days or weeks old.
+/// </summary>
 public sealed class StaticFallbackRateProvider(HttpClient httpClient, ILogger<StaticFallbackRateProvider> logger) : IExchangeRateProvider
 {
     public string Name => "Static Fallback";

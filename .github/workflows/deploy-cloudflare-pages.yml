@@ -1,0 +1,47 @@
+name: Deploy Blazor WASM to Cloudflare Pages
+
+# Cloudflare Pages serves the site at a custom domain (no subpath),
+# so <base href="/"> in index.html stays as-is — no rewriting needed.
+# Configure these repository secrets:
+#   CLOUDFLARE_ACCOUNT_ID  – Your Cloudflare account ID
+#   CLOUDFLARE_API_TOKEN   – API token with "Cloudflare Pages: Edit" permission
+# And set the CF_PROJECT_NAME variable below to your Cloudflare Pages project name.
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: "cloudflare-pages"
+  cancel-in-progress: true
+
+env:
+  CF_PROJECT_NAME: currency-calculator  # ← change to your Cloudflare Pages project name
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Src/CurrencyCalculator.slnx
+
+      - name: Publish
+        run: dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Release -o publish
+
+      # No base href rewrite needed — Cloudflare serves at domain root "/"
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy publish/wwwroot --project-name=${{ env.CF_PROJECT_NAME }}

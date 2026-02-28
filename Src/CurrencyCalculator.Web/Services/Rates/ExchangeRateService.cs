@@ -3,11 +3,23 @@ using CurrencyCalculator.Web.Models;
 
 namespace CurrencyCalculator.Web.Services.Rates;
 
+/// <summary>
+/// Orchestrates exchange rate retrieval with a multi-tier fallback strategy:
+///   1. Live online API providers (fawazahmed0, Frankfurter)
+///   2. Browser localStorage cache (with configurable TTL)
+///   3. Static fallback JSON (pre-built by GitHub Actions)
+/// All rates are normalized to a USD base.
+/// </summary>
 public sealed class ExchangeRateService(
     IEnumerable<IExchangeRateProvider> providers,
     BrowserStorageService browserStorageService,
     ILogger<ExchangeRateService> _logger)
 {
+    /// <summary>
+    /// Retrieve the latest exchange rates.
+    /// When <paramref name="forceRefresh"/> is true, skips cache and fetches from live APIs.
+    /// Falls back to stale cache → static fallback if all APIs fail.
+    /// </summary>
     public async Task<ExchangeRatesSnapshot> GetLatestAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
         var providerList = providers.ToArray();
@@ -63,6 +75,13 @@ public sealed class ExchangeRateService(
         throw new InvalidOperationException("No exchange rate source is currently available.");
     }
 
+    /// <summary>
+    /// Convert an amount between two currencies using the USD-based cross-rate:
+    ///   result = amount / rate(from) * rate(to).
+    /// This is the standard approach for consumer-grade FX tools and introduces
+    /// negligible error (&lt;0.01%) compared to direct pair rates, because the
+    /// fawazahmed0 API derives all rates from USD anyway.
+    /// </summary>
     public decimal Convert(decimal amount, string fromCurrencyCode, string toCurrencyCode, ExchangeRatesSnapshot snapshot)
     {
         var fromCode = fromCurrencyCode.ToUpperInvariant();
@@ -110,6 +129,7 @@ public sealed class ExchangeRateService(
         };
     }
 
+    /// <summary>Normalize a snapshot to contain only currencies from <see cref="CurrencyCatalog"/>.</summary>
     private static ExchangeRatesSnapshot EnsureSupportedRates(ExchangeRatesSnapshot snapshot)
     {
         var normalizedRates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)

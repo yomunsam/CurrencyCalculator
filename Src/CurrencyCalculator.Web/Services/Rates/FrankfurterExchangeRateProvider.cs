@@ -4,6 +4,10 @@ using CurrencyCalculator.Web.Models;
 
 namespace CurrencyCalculator.Web.Services.Rates;
 
+/// <summary>
+/// Secondary / fallback live provider. Fetches fiat-only rates from the Frankfurter API
+/// (ECB data). Does not provide crypto rates — those come from the primary provider.
+/// </summary>
 public sealed class FrankfurterExchangeRateProvider(HttpClient httpClient, ILogger<FrankfurterExchangeRateProvider> logger) : IExchangeRateProvider
 {
     public string Name => "Frankfurter";

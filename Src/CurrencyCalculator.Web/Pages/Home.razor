@@ -41,6 +41,7 @@
         var rowIndex = i;
         var isActive = rowIndex == ActiveIndex;
         var currency = CurrencyCatalog.GetByCode(row.CurrencyCode);
+        var isCrypto = currency.Kind == CurrencyKind.Crypto;
         var isCryptoStale = IsCryptoStale(currency);
 
         <div class="cc-row @(isActive ? "is-active" : "")"
@@ -65,10 +66,19 @@
                 <span class="currency-name">@currency.GetName(CurrentLanguage)</span>
             </div>
 
-            @* Crypto stale warning icon *@
-            @if (isCryptoStale)
+            @* Crypto warning icon: yellow = stale (>1h), blue = volatile (always for crypto) *@
+            @if (isCrypto)
             {
-                <i class="bi bi-exclamation-triangle-fill stale-icon" title="@L("CryptoStaleWarning")"></i>
+                @if (isCryptoStale)
+                {
+                    <i class="bi bi-exclamation-triangle-fill crypto-warn-stale"
+                       @onclick="() => ShowCryptoWarning(true)" @onclick:stopPropagation="true"></i>
+                }
+                else
+                {
+                    <i class="bi bi-exclamation-circle-fill crypto-warn-volatile"
+                       @onclick="() => ShowCryptoWarning(false)" @onclick:stopPropagation="true"></i>
+                }
             }
 
             @* Amount input *@
@@ -79,12 +89,22 @@
                    @onblur="eventArgs => OnAmountBlurAsync(rowIndex, eventArgs)"
                    @oninput="eventArgs => OnAmountInputAsync(rowIndex, eventArgs)" />
 
-            @* Remove button *@
-            <button class="row-btn" @onclick="() => RemoveItemAsync(rowIndex)" @onclick:stopPropagation="true"
-                    disabled="@(CompareItems.Count <= AppSettings.MinCompareItems)"
-                    title="@L("Remove")">
-                <i class="bi bi-x-lg"></i>
-            </button>
+            @* Active row: clear button; otherwise: remove button *@
+            @if (isActive)
+            {
+                <button class="row-btn" @onclick="() => ClearAmountAsync(rowIndex)" @onclick:stopPropagation="true"
+                        title="@L("Clear")">
+                    <i class="bi bi-eraser"></i>
+                </button>
+            }
+            else
+            {
+                <button class="row-btn" @onclick="() => RemoveItemAsync(rowIndex)" @onclick:stopPropagation="true"
+                        disabled="@(CompareItems.Count <= AppSettings.MinCompareItems)"
+                        title="@L("Remove")">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
         </div>
     }
 
@@ -121,10 +141,25 @@
 
     @* Action buttons *@
     <div class="cc-footer-actions mt-2">
-        <button class="footer-btn" @onclick="CycleLanguageAsync" title="@L("Language")">
-            <i class="bi bi-translate"></i>
-            <span>@GetLanguageLabel()</span>
-        </button>
+        <div class="position-relative d-inline-block">
+            <button class="footer-btn" @onclick="ToggleLanguageMenu" @onclick:stopPropagation="true" title="@L("Language")">
+                <i class="bi bi-translate"></i>
+                <span>@GetLanguageLabel()</span>
+                <i class="bi bi-chevron-up" style="font-size:.6rem;"></i>
+            </button>
+            @if (ShowLanguageMenu)
+            {
+                <div class="cc-lang-menu">
+                    @foreach (var lang in LocalizationService.Languages)
+                    {
+                        <button class="cc-lang-menu-item @(lang.Code == CurrentLanguage ? "active" : "")"
+                                @onclick="() => SwitchLanguageAsync(lang.Code)">
+                            @lang.DisplayName
+                        </button>
+                    }
+                </div>
+            }
+        </div>
         <button class="footer-btn @(IsRefreshing ? "refreshing" : "")" @onclick="RefreshRatesAsync" disabled="@IsLoading" title="@L("Refresh")">
             <i class="bi bi-arrow-clockwise"></i>
             <span>@L("Refresh")</span>
@@ -167,19 +202,74 @@
 @if (ShowAbout)
 {
     <div class="cc-modal-backdrop" @onclick="() => ShowAbout = false">
-        <div class="cc-modal" @onclick:stopPropagation="true">
+        <div class="cc-modal cc-modal-about" @onclick:stopPropagation="true">
             <button class="close-btn" @onclick="() => ShowAbout = false"><i class="bi bi-x-lg"></i></button>
+
+            @* Section: About *@
             <h2>@L("AboutTitle")</h2>
-            <p style="font-size:.9rem;">@L("AboutDescription")</p>
-            <p style="font-size:.85rem;color:var(--cc-text-secondary);">
-                <i class="bi bi-person me-1"></i>@L("AboutDeveloper"): Yomu
-            </p>
-            <a href="https://github.com" target="_blank" rel="noreferrer"
-               style="font-size:.85rem;">
-                <i class="bi bi-github me-1"></i>@L("AboutGitHub")
-            </a>
+            <p class="about-text">@L("AboutDesc")</p>
+
+            @* Section: Data Sources *@
+            <h3 class="about-section-title">@L("AboutDataSources")</h3>
+            <ul class="about-list">
+                <li>
+                    <i class="bi bi-github me-1"></i>
+                    <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer">fawazahmed0/exchange-api</a>
+                </li>
+                <li>
+                    <a href="https://www.frankfurter.app/" target="_blank" rel="noreferrer">Frankfurter</a>
+                </li>
+            </ul>
+
+            @* Section: Tech Stack *@
+            <h3 class="about-section-title">@L("AboutTechStack")</h3>
+            <div class="about-tags">
+                <span class="about-tag">Blazor WebAssembly</span>
+                <span class="about-tag">.NET 10</span>
+                <span class="about-tag">PWA</span>
+                <span class="about-tag">GitHub Actions</span>
+            </div>
+
+            @* Section: AI Disclosure *@
+            <h3 class="about-section-title">@L("AboutAIDisclosure")</h3>
+            <p class="about-text">@L("AboutAIDisclosureText")</p>
+
+            @* Section: Disclaimer *@
+            <h3 class="about-section-title">@L("AboutDisclaimer")</h3>
+            <ol class="about-disclaimer">
+                <li>@L("AboutDisclaimer1")</li>
+                <li>@L("AboutDisclaimer2")</li>
+                <li>@L("AboutDisclaimer3")</li>
+            </ol>
+
+            @* Developer + repo *@
+            <div class="about-footer">
+                <p>
+                    <i class="bi bi-person me-1"></i>@L("AboutDeveloper"): Yomu
+                </p>
+                <a href="https://github.com/yomunsam/CurrencyCalculator" target="_blank" rel="noreferrer">
+                    <i class="bi bi-github me-1"></i>@L("AboutGitHub")
+                </a>
+            </div>
         </div>
     </div>
+}
+
+@* ════════ Crypto Warning Modal ════════ *@
+@if (ShowCryptoModal)
+{
+    <div class="cc-modal-backdrop" @onclick="() => ShowCryptoModal = false">
+        <div class="cc-modal cc-modal-sm" @onclick:stopPropagation="true">
+            <button class="close-btn" @onclick="() => ShowCryptoModal = false"><i class="bi bi-x-lg"></i></button>
+            <p style="font-size:.9rem;margin:0;">@CryptoModalMessage</p>
+        </div>
+    </div>
+}
+
+@* ════════ Language Menu Backdrop (click outside to close) ════════ *@
+@if (ShowLanguageMenu)
+{
+    <div class="cc-lang-backdrop" @onclick="() => ShowLanguageMenu = false"></div>
 }
 
 @code {
@@ -193,18 +283,24 @@
     private string? ErrorMessage { get; set; }
     private bool IsDarkMode { get; set; }
     private bool ShowAbout { get; set; }
+    private bool ShowLanguageMenu { get; set; }
+    private bool ShowCryptoModal { get; set; }
+    private string CryptoModalMessage { get; set; } = "";
     private bool SelectorOpen { get; set; }
     private int SelectorTargetIndex { get; set; }
-    // Track which row the user is actively editing (typing)
+    /// <summary>Index of the row the user is actively editing (typing into).</summary>
     private int? EditingRowIndex { get; set; }
+    /// <summary>Raw text the user has typed while editing (before formatting).</summary>
     private string? RawEditingInput { get; set; }
 
     // ── Lifecycle ──────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
+        // Detect language from storage or browser preference
         CurrentLanguage = await LocalizationService.InitializeLanguageAsync();
         IsDarkMode = await JS.InvokeAsync<bool>("ccTheme.isDark");
 
+        // Restore user preferences (comparison items, active index, language)
         var preferences = await BrowserStorageService.GetAsync<UserPreferences>(AppSettings.PreferencesStorageKey);
         if (preferences is not null && preferences.Items.Count > 0)
         {
@@ -218,13 +314,14 @@
             ActiveIndex = 0;
         }
 
-        // Always try live first
+        // Always try live API first on page load
         await LoadRatesAsync(forceRefresh: true);
         RecalculateFromActive();
         await SavePreferencesAsync();
     }
 
     // ── Rates ──────────────────────────────────────────────────────────
+    /// <summary>Manual refresh with animation + toast feedback.</summary>
     private async Task RefreshRatesAsync()
     {
         IsRefreshing = true;
@@ -233,7 +330,7 @@
         RecalculateFromActive();
         await SavePreferencesAsync();
 
-        // Toast feedback
+        // Toast feedback to indicate success or failure
         if (string.IsNullOrWhiteSpace(ErrorMessage))
         {
             await JS.InvokeVoidAsync("ccToast.show", L("RefreshSuccess"), 2000);
@@ -243,7 +340,7 @@
             await JS.InvokeVoidAsync("ccToast.show", L("RefreshFailed"), 3000);
         }
 
-        // Keep animation for a brief moment so user sees it
+        // Keep spin animation visible briefly so user perceives it
         _ = Task.Delay(600).ContinueWith(_ =>
         {
             IsRefreshing = false;
@@ -251,6 +348,7 @@
         });
     }
 
+    /// <summary>Load rates via the ExchangeRateService (online → cache → fallback).</summary>
     private async Task LoadRatesAsync(bool forceRefresh)
     {
         IsLoading = true;
@@ -270,13 +368,16 @@
     }
 
     // ── Row focus / input ──────────────────────────────────────────────
+    /// <summary>When a row's input gains focus, mark it as the active editing row.</summary>
     private void OnRowFocus(int index)
     {
         SetActiveIndex(index);
         EditingRowIndex = index;
+        // Show the raw numeric value (no thousand separators) for easy editing
         RawEditingInput = FormatAmountRaw(CompareItems[index].Amount, CurrencyCatalog.GetByCode(CompareItems[index].CurrencyCode));
     }
 
+    /// <summary>Switch the active (base currency) row. Recalculates all other rows.</summary>
     private void SetActiveIndex(int index)
     {
         if (ActiveIndex == index) return;
@@ -286,6 +387,10 @@
         RecalculateFromActive();
     }
 
+    /// <summary>
+    /// Handle real-time input. Parse the value (supporting math expressions),
+    /// update the active row amount, and recalculate all other rows.
+    /// </summary>
     private async Task OnAmountInputAsync(int index, ChangeEventArgs eventArgs)
     {
         var raw = eventArgs.Value?.ToString() ?? "";
@@ -301,9 +406,11 @@
         await SavePreferencesAsync();
     }
 
+    /// <summary>
+    /// On blur, finalize math expression evaluation and clear editing state.
+    /// </summary>
     private async Task OnAmountBlurAsync(int index, FocusEventArgs _)
     {
-        // On blur, evaluate math expressions and finalize
         if (EditingRowIndex == index && RawEditingInput is not null)
         {
             if (MathExpressionEvaluator.TryEvaluate(RawEditingInput, out var result))
@@ -317,6 +424,16 @@
         RawEditingInput = null;
     }
 
+    /// <summary>Clear the amount of the specified row to 0 and recalculate.</summary>
+    private async Task ClearAmountAsync(int index)
+    {
+        CompareItems[index].Amount = 0m;
+        EditingRowIndex = null;
+        RawEditingInput = null;
+        RecalculateFromActive();
+        await SavePreferencesAsync();
+    }
+
     // ── Currency selection ─────────────────────────────────────────────
     private void OpenSelector(int index)
     {
@@ -326,13 +443,12 @@
 
     private void CloseSelector() => SelectorOpen = false;
 
+    /// <summary>Select a currency for the target row. Warns on duplicates.</summary>
     private async Task SelectCurrencyAsync(string code)
     {
         SelectorOpen = false;
-        var previous = CompareItems[SelectorTargetIndex].CurrencyCode;
         CompareItems[SelectorTargetIndex].CurrencyCode = code;
 
-        // Check for duplicate and show toast
         if (CompareItems.Count(item => item.CurrencyCode.Equals(code, StringComparison.OrdinalIgnoreCase)) > 1)
         {
             await JS.InvokeVoidAsync("ccToast.show", L("DuplicateCurrency"), 3000);
@@ -342,18 +458,8 @@
         await SavePreferencesAsync();
     }
 
-    private async Task OnCurrencyChangedAsync(int index, ChangeEventArgs eventArgs)
-    {
-        var selected = eventArgs.Value?.ToString()?.Trim().ToUpperInvariant();
-        if (string.IsNullOrWhiteSpace(selected) || !CurrencyCatalog.IsSupported(selected)) return;
-        CompareItems[index].CurrencyCode = selected;
-        if (CompareItems.Count(item => item.CurrencyCode.Equals(selected, StringComparison.OrdinalIgnoreCase)) > 1)
-            await JS.InvokeVoidAsync("ccToast.show", L("DuplicateCurrency"), 3000);
-        RecalculateFromActive();
-        await SavePreferencesAsync();
-    }
-
     // ── Add / Remove ───────────────────────────────────────────────────
+    /// <summary>Add a new comparison row with the first unused currency.</summary>
     private async Task AddItemAsync()
     {
         if (CompareItems.Count >= AppSettings.MaxCompareItems) return;
@@ -366,6 +472,7 @@
         await SavePreferencesAsync();
     }
 
+    /// <summary>Remove a comparison row (min items enforced).</summary>
     private async Task RemoveItemAsync(int index)
     {
         if (CompareItems.Count <= AppSettings.MinCompareItems) return;
@@ -384,11 +491,14 @@
     }
 
     // ── Language ───────────────────────────────────────────────────────
-    private async Task CycleLanguageAsync()
+    private void ToggleLanguageMenu() => ShowLanguageMenu = !ShowLanguageMenu;
+
+    /// <summary>Switch to a specific language from the popup menu.</summary>
+    private async Task SwitchLanguageAsync(string langCode)
     {
-        var codes = LocalizationService.SupportedLanguages.ToList();
-        var idx = codes.IndexOf(CurrentLanguage);
-        CurrentLanguage = codes[(idx + 1) % codes.Count];
+        ShowLanguageMenu = false;
+        if (CurrentLanguage == langCode) return;
+        CurrentLanguage = langCode;
         await LocalizationService.SaveLanguageAsync(CurrentLanguage);
         await SavePreferencesAsync();
     }
@@ -399,7 +509,20 @@
         return entry?.DisplayName ?? CurrentLanguage;
     }
 
+    // ── Crypto warning ─────────────────────────────────────────────────
+    /// <summary>Show a small modal explaining the crypto icon meaning.</summary>
+    private void ShowCryptoWarning(bool isStale)
+    {
+        CryptoModalMessage = isStale ? L("CryptoStaleWarning") : L("CryptoVolatileWarning");
+        ShowCryptoModal = true;
+    }
+
     // ── Recalculation ──────────────────────────────────────────────────
+    /// <summary>
+    /// Convert all non-active rows based on the active row's amount.
+    /// Uses the "cross-rate via USD" approach: amount_target = amount_base / rate_base * rate_target.
+    /// This is standard for most retail FX and sufficiently accurate for consumer use.
+    /// </summary>
     private void RecalculateFromActive()
     {
         if (LatestSnapshot is null || CompareItems.Count == 0) return;
@@ -418,20 +541,78 @@
     }
 
     // ── Display helpers ────────────────────────────────────────────────
+    /// <summary>
+    /// Returns the display value for a row's amount input.
+    /// During editing: shows localized formatting of what user typed (with thousand separators).
+    /// When not editing: shows the formatted amount.
+    /// </summary>
     private string GetDisplayAmount(CompareItemState row, CurrencyDefinition currency)
     {
         var rowIndex = CompareItems.IndexOf(row);
-        // If user is actively editing this row, show raw input
+        // During editing, try to localize the raw input if it's a clean number
         if (EditingRowIndex == rowIndex && RawEditingInput is not null)
-            return RawEditingInput;
+            return FormatEditingInput(RawEditingInput, currency);
         return FormatAmountForDisplay(row.Amount, currency);
     }
 
+    /// <summary>Format a finalized amount with locale-appropriate thousand separators and decimals.</summary>
     private string FormatAmountForDisplay(decimal amount, CurrencyDefinition currency)
     {
         if (amount == 0m) return "";
         var culture = GetCultureForLanguage();
         return amount.ToString($"N{currency.DisplayDecimals}", culture);
+    }
+
+    /// <summary>
+    /// Format the raw input during editing. If the input is a plain number,
+    /// apply thousand separators while preserving trailing decimals/dots.
+    /// If it contains operators (math expression), show as-is.
+    /// </summary>
+    private string FormatEditingInput(string raw, CurrencyDefinition currency)
+    {
+        if (string.IsNullOrEmpty(raw)) return "";
+
+        // If it contains math operators, don't localize — show as-is
+        if (raw.AsSpan().ContainsAny("+-*/()"))
+            return raw;
+
+        // Strip existing thousand separators for re-formatting
+        var cleaned = raw.Replace(",", "").Replace(" ", "").Replace("_", "");
+
+        // Preserve trailing dot or trailing zeros after dot (user is still typing decimals)
+        var dotIndex = cleaned.IndexOf('.');
+        var hasTrailingDot = cleaned.EndsWith('.');
+        string? decimalSuffix = null;
+
+        if (dotIndex >= 0 && !hasTrailingDot)
+        {
+            decimalSuffix = cleaned[dotIndex..]; // e.g. ".50" or ".5"
+        }
+
+        if (decimal.TryParse(cleaned, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var number))
+        {
+            var culture = GetCultureForLanguage();
+            var separator = culture.NumberFormat.NumberGroupSeparator;
+
+            if (hasTrailingDot)
+            {
+                // Format integer part, append dot
+                return number.ToString("N0", culture) + ".";
+            }
+            else if (decimalSuffix is not null)
+            {
+                // Format integer part, keep original decimal suffix
+                var intPart = decimal.Truncate(number);
+                return intPart.ToString("N0", culture) + decimalSuffix;
+            }
+            else
+            {
+                // Pure integer — format with thousand separators, no decimals
+                return number.ToString("N0", culture);
+            }
+        }
+
+        return raw;
     }
 
     private static string FormatAmountRaw(decimal amount, CurrencyDefinition currency)
@@ -440,6 +621,7 @@
         return amount.ToString(System.Globalization.CultureInfo.InvariantCulture);
     }
 
+    /// <summary>Map the current language to a .NET CultureInfo for number formatting.</summary>
     private System.Globalization.CultureInfo GetCultureForLanguage() => CurrentLanguage switch
     {
         "zh-CN" => new System.Globalization.CultureInfo("zh-CN"),
@@ -452,12 +634,14 @@
     private string L(string key) => LocalizationService.T(CurrentLanguage, key);
 
     // ── Stale detection ────────────────────────────────────────────────
+    /// <summary>True if the overall rate data is older than the fiat stale threshold (24h).</summary>
     private bool IsGlobalStale()
     {
         if (LatestSnapshot is null) return false;
         return (DateTimeOffset.UtcNow - LatestSnapshot.FetchedAtUtc) > AppSettings.FiatStaleThreshold;
     }
 
+    /// <summary>True if a crypto currency's rate data is older than the crypto stale threshold (1h).</summary>
     private bool IsCryptoStale(CurrencyDefinition currency)
     {
         if (currency.Kind != CurrencyKind.Crypto || LatestSnapshot is null) return false;
@@ -473,6 +657,7 @@
     };
 
     // ── Persistence ────────────────────────────────────────────────────
+    /// <summary>Save user preferences (language, active index, comparison items) to localStorage.</summary>
     private async Task SavePreferencesAsync()
     {
         var preferences = new UserPreferences
@@ -486,6 +671,7 @@
         await BrowserStorageService.SetAsync(AppSettings.PreferencesStorageKey, preferences);
     }
 
+    /// <summary>Validate saved comparison items against the current currency catalog.</summary>
     private List<CompareItemState> EnsureValidCompareItems(List<CompareItemState> items)
     {
         var valid = items
@@ -496,6 +682,7 @@
         return valid.Count >= AppSettings.MinCompareItems ? valid : BuildDefaultItems(CurrentLanguage);
     }
 
+    /// <summary>Build default comparison rows based on the language's preferred currencies.</summary>
     private List<CompareItemState> BuildDefaultItems(string language)
     {
         var defaults = LocalizationService.GetDefaultCurrencyCodes(language);
@@ -506,11 +693,11 @@
         ];
     }
 
+    /// <summary>Parse user input as a decimal amount, supporting math expressions.</summary>
     private static bool TryParseAmount(string? input, out decimal amount)
     {
         amount = 0m;
         if (string.IsNullOrWhiteSpace(input)) return false;
-        // Try math expression first
         if (MathExpressionEvaluator.TryEvaluate(input, out amount)) return true;
         return false;
     }

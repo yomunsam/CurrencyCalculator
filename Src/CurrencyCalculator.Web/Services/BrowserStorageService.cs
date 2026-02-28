@@ -3,6 +3,10 @@ using Microsoft.JSInterop;
 
 namespace CurrencyCalculator.Web.Services;
 
+/// <summary>
+/// Provides typed get/set/remove operations over browser localStorage via JS interop.
+/// All values are serialized to JSON using System.Text.Json.
+/// </summary>
 public sealed class BrowserStorageService(IJSRuntime jsRuntime)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);

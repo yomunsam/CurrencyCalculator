@@ -2,6 +2,12 @@ using System.Collections.ObjectModel;
 
 namespace CurrencyCalculator.Web.Core;
 
+/// <summary>
+/// Central registry of supported currencies.
+/// To add a new fiat currency: add one <c>Fiat(...)</c> line below.
+/// To add a new cryptocurrency: add one <c>Crypto(...)</c> line.
+/// Icon = 2-letter country code for fiat (used with flagcdn.com) or symbol for crypto.
+/// </summary>
 public static class CurrencyCatalog
 {
     // To add a new currency: add one entry here. Icon = 2-letter country code (fiat) or crypto symbol.
@@ -18,6 +24,7 @@ public static class CurrencyCatalog
         Fiat("CAD", "ca", 2, "Canadian Dollar", "加元", "カナダドル"),
         Fiat("CHF", "ch", 2, "Swiss Franc", "瑞士法郎", "スイスフラン"),
         Fiat("NZD", "nz", 2, "New Zealand Dollar", "新西兰元", "NZドル"),
+        Fiat("TWD", "tw", 0, "New Taiwan Dollar", "新台币", "台湾ドル"),
         Crypto("BTC", "₿", 8, "Bitcoin", "比特币", "ビットコイン"),
         Crypto("ETH", "Ξ", 8, "Ethereum", "以太坊", "イーサリアム")
     ];

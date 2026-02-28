@@ -4,6 +4,10 @@ using CurrencyCalculator.Web.Models;
 
 namespace CurrencyCalculator.Web.Services.Rates;
 
+/// <summary>
+/// Primary exchange rate provider. Fetches USD-based rates for all supported currencies
+/// (fiat + crypto) from the fawazahmed0/exchange-api (Cloudflare Pages hosted).
+/// </summary>
 public sealed class FawazExchangeApiProvider(HttpClient httpClient, ILogger<FawazExchangeApiProvider> logger) : IExchangeRateProvider
 {
     private const string Url = "https://latest.currency-api.pages.dev/v1/currencies/usd.json";
