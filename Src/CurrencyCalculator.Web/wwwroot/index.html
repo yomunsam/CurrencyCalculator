@@ -69,6 +69,31 @@
             isDark: () => document.documentElement.getAttribute('data-bs-theme') === 'dark'
         };
 
+        // Drag helpers
+        window.ccDrag = {
+            capture: function (element, pointerId) {
+                if (element && element.setPointerCapture) element.setPointerCapture(pointerId);
+            },
+            getStepHeight: function () {
+                var rows = document.querySelectorAll('.cc-row');
+                if (rows.length < 2) return rows.length === 1 ? rows[0].getBoundingClientRect().height + 8 : 68; /* 8 = flex gap, 68 = approx row height + gap fallback */
+                return rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top;
+            }
+        };
+
+        // Focus helpers
+        window.ccFocus = {
+            cursorToEnd: function (element) {
+                if (!element) return;
+                requestAnimationFrame(function () {
+                    if (typeof element.setSelectionRange === 'function') {
+                        var len = (element.value || '').length;
+                        element.setSelectionRange(len, len);
+                    }
+                });
+            }
+        };
+
         // Toast helper (pure CSS, no Bootstrap JS)
         window.ccToast = {
             show: (message, durationMs) => {

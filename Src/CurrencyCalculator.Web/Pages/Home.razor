@@ -42,15 +42,15 @@
         var rowIndex = i;
         var currency = CurrencyCatalog.GetByCode(row.CurrencyCode);
 
-        <CurrencyRowItem
+        <CurrencyRowItem @key="row.CurrencyCode"
             Currency="currency"
-            CurrentLanguage="CurrentLanguage"
+            CurrentLanguage="@CurrentLanguage"
             DisplayAmount="@GetDisplayAmount(row, currency)"
             IsActive="rowIndex == ActiveIndex"
             CanRemove="CompareItems.Count > AppSettings.MinCompareItems"
             IsCryptoStale="IsCryptoStale(currency)"
-            IsDragPending="DragPendingIndex == rowIndex && DraggingIndex is null"
             IsDragging="DraggingIndex == rowIndex"
+            DragStyle="@GetDragStyle(rowIndex)"
             OnSetActive="() => SetActiveIndex(rowIndex)"
             OnOpenSelector="() => OpenSelector(rowIndex)"
             OnShowCryptoWarning="ShowCryptoWarning"
@@ -64,8 +64,7 @@
             OnDragPointerDown="eventArgs => OnRowDragPointerDownAsync(rowIndex, eventArgs)"
             OnDragPointerMove="eventArgs => OnRowDragPointerMoveAsync(rowIndex, eventArgs)"
             OnDragPointerUp="eventArgs => OnRowDragPointerUpAsync(rowIndex, eventArgs)"
-            OnDragPointerCancel="eventArgs => OnRowDragPointerCancelAsync(rowIndex, eventArgs)"
-            OnDragEnter="() => OnRowDragEnterAsync(rowIndex)" />
+            OnDragPointerCancel="eventArgs => OnRowDragPointerCancelAsync(rowIndex, eventArgs)" />
     }
 
     <button class="cc-add-row" @onclick="AddItemAsync"
@@ -128,14 +127,14 @@
 
 <CurrencySelectorOverlay
     IsOpen="SelectorOpen"
-    CurrentLanguage="CurrentLanguage"
+    CurrentLanguage="@CurrentLanguage"
     Items="GetSelectableCurrencies()"
     EmptyMessage="@L("NoMoreCurrencies")"
     OnClose="CloseSelector"
     OnSelect="SelectCurrencyAsync" />
 
 <AboutModal IsOpen="ShowAbout" Localize="L" OnClose="CloseAbout" />
-<CryptoWarningModal IsOpen="ShowCryptoModal" Message="CryptoModalMessage" OnClose="CloseCryptoModal" />
+<CryptoWarningModal IsOpen="ShowCryptoModal" Message="@CryptoModalMessage" OnClose="CloseCryptoModal" />
 
 @if (ShowLanguageMenu)
 {
@@ -162,10 +161,11 @@
     private List<string> RecentSelectorCodes { get; set; } = [];
     private int? DragPendingIndex { get; set; }
     private int? DraggingIndex { get; set; }
-    private double? DragStartX { get; set; }
-    private double? DragStartY { get; set; }
-    private bool IsDragPointerDown { get; set; }
-    private CancellationTokenSource? DragLongPressCts { get; set; }
+    private double DragStartClientY { get; set; }
+    private double DragCurrentOffsetY { get; set; }
+    private double DragStepHeight { get; set; }
+    private int? DragTargetIndex { get; set; }
+    private const double DragActivationThresholdPx = 4;
 
     protected override async Task OnInitializedAsync()
     {
@@ -355,97 +355,107 @@
     private async Task OnRowDragPointerDownAsync(int index, PointerEventArgs eventArgs)
     {
         ResetDragState();
-        IsDragPointerDown = true;
         DragPendingIndex = index;
-        DragStartX = eventArgs.ClientX;
-        DragStartY = eventArgs.ClientY;
-        DragLongPressCts = new CancellationTokenSource();
+        DragStartClientY = eventArgs.ClientY;
+        DragStepHeight = await JS.InvokeAsync<double>("ccDrag.getStepHeight");
+        if (DragStepHeight <= 0) DragStepHeight = 68; // fallback: approx row height (60px) + flex gap (8px)
+    }
 
-        try
+    private Task OnRowDragPointerMoveAsync(int _, PointerEventArgs eventArgs)
+    {
+        if (DragPendingIndex is null && DraggingIndex is null) return Task.CompletedTask;
+
+        var deltaY = eventArgs.ClientY - DragStartClientY;
+
+        if (DraggingIndex is null)
         {
-            await Task.Delay(AppSettings.RowDragLongPressMs, DragLongPressCts.Token);
-            if (!DragLongPressCts.IsCancellationRequested && IsDragPointerDown && DragPendingIndex == index)
+            if (Math.Abs(deltaY) < DragActivationThresholdPx) return Task.CompletedTask;
+            DraggingIndex = DragPendingIndex;
+            DragPendingIndex = null;
+        }
+
+        DragCurrentOffsetY = deltaY;
+        var targetOffset = (int)Math.Round(DragCurrentOffsetY / DragStepHeight);
+        DragTargetIndex = Math.Clamp(DraggingIndex!.Value + targetOffset, 0, CompareItems.Count - 1);
+
+        return Task.CompletedTask;
+    }
+
+    private async Task OnRowDragPointerUpAsync(int _, PointerEventArgs __)
+    {
+        await FinalizeDragAsync();
+    }
+
+    private async Task OnRowDragPointerCancelAsync(int _, PointerEventArgs __)
+    {
+        await FinalizeDragAsync();
+    }
+
+    private async Task FinalizeDragAsync()
+    {
+        if (DraggingIndex is not null && DragTargetIndex is not null)
+        {
+            var sourceIndex = DraggingIndex.Value;
+            var targetIndex = DragTargetIndex.Value;
+
+            if (sourceIndex != targetIndex)
             {
-                DraggingIndex = index;
-                await InvokeAsync(StateHasChanged);
+                var moved = CompareItems[sourceIndex];
+                CompareItems.RemoveAt(sourceIndex);
+                CompareItems.Insert(targetIndex, moved);
+
+                if (ActiveIndex == sourceIndex)
+                {
+                    ActiveIndex = targetIndex;
+                }
+                else if (sourceIndex < ActiveIndex && targetIndex >= ActiveIndex)
+                {
+                    ActiveIndex--;
+                }
+                else if (sourceIndex > ActiveIndex && targetIndex <= ActiveIndex)
+                {
+                    ActiveIndex++;
+                }
+
+                await SavePreferencesAsync();
             }
         }
-        catch (TaskCanceledException)
-        {
-        }
-    }
 
-    private Task OnRowDragPointerMoveAsync(int index, PointerEventArgs eventArgs)
-    {
-        if (!IsDragPointerDown || DraggingIndex is not null || DragPendingIndex != index || DragStartX is null || DragStartY is null)
-            return Task.CompletedTask;
-
-        var deltaX = eventArgs.ClientX - DragStartX.Value;
-        var deltaY = eventArgs.ClientY - DragStartY.Value;
-        if (Math.Abs(deltaX) > AppSettings.RowDragHorizontalCancelThresholdPx && Math.Abs(deltaX) > Math.Abs(deltaY))
-            CancelDragPendingState();
-
-        return Task.CompletedTask;
-    }
-
-    private Task OnRowDragPointerUpAsync(int _, PointerEventArgs __)
-    {
         ResetDragState();
-        return Task.CompletedTask;
-    }
-
-    private Task OnRowDragPointerCancelAsync(int _, PointerEventArgs __)
-    {
-        ResetDragState();
-        return Task.CompletedTask;
-    }
-
-    private async Task OnRowDragEnterAsync(int targetIndex)
-    {
-        if (DraggingIndex is null || targetIndex < 0 || targetIndex >= CompareItems.Count)
-            return;
-
-        var sourceIndex = DraggingIndex.Value;
-        if (sourceIndex == targetIndex)
-            return;
-
-        var moved = CompareItems[sourceIndex];
-        CompareItems.RemoveAt(sourceIndex);
-        CompareItems.Insert(targetIndex, moved);
-
-        if (ActiveIndex == sourceIndex)
-        {
-            ActiveIndex = targetIndex;
-        }
-        else if (sourceIndex < ActiveIndex && targetIndex >= ActiveIndex)
-        {
-            ActiveIndex--;
-        }
-        else if (sourceIndex > ActiveIndex && targetIndex <= ActiveIndex)
-        {
-            ActiveIndex++;
-        }
-
-        DraggingIndex = targetIndex;
-        await SavePreferencesAsync();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private void CancelDragPendingState()
-    {
-        DragLongPressCts?.Cancel();
-        DragPendingIndex = null;
     }
 
     private void ResetDragState()
     {
-        DragLongPressCts?.Cancel();
-        DragLongPressCts = null;
         DragPendingIndex = null;
         DraggingIndex = null;
-        DragStartX = null;
-        DragStartY = null;
-        IsDragPointerDown = false;
+        DragTargetIndex = null;
+        DragCurrentOffsetY = 0;
+        DragStartClientY = 0;
+    }
+
+    private string? GetDragStyle(int index)
+    {
+        if (DraggingIndex is null || DragTargetIndex is null)
+            return null;
+
+        var dragIdx = DraggingIndex.Value;
+        var targetIdx = DragTargetIndex.Value;
+
+        if (index == dragIdx)
+        {
+            return $"transform:translateY({DragCurrentOffsetY:F0}px);z-index:100;position:relative;";
+        }
+
+        if (dragIdx != targetIdx)
+        {
+            if (targetIdx > dragIdx && index > dragIdx && index <= targetIdx)
+                return $"transform:translateY({-DragStepHeight:F0}px);";
+
+            if (targetIdx < dragIdx && index >= targetIdx && index < dragIdx)
+                return $"transform:translateY({DragStepHeight:F0}px);";
+        }
+
+        return null;
     }
 
     private void RecalculateFromActive()
