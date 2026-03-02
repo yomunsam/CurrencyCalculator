@@ -93,6 +93,21 @@ h1:focus { outline: none; }
     position: relative;
 }
 
+.cc-row.is-drag-pending {
+    animation: cc-hold-pulse .45s ease-in-out infinite alternate;
+}
+
+.cc-row.is-dragging {
+    opacity: .86;
+    transform: scale(1.01);
+    box-shadow: 0 8px 22px rgba(0,0,0,.2);
+}
+
+@keyframes cc-hold-pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.01); }
+}
+
 .cc-row.is-active {
     border-color: var(--cc-accent);
     box-shadow: var(--cc-shadow-active);
@@ -105,6 +120,27 @@ h1:focus { outline: none; }
     object-fit: cover;
     flex-shrink: 0;
     box-shadow: 0 0 0 1px rgba(0,0,0,.08);
+}
+
+.cc-row .row-drag-handle {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--cc-text-secondary);
+    cursor: grab;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.cc-row .row-drag-handle:active {
+    cursor: grabbing;
+    background: var(--cc-accent-soft);
+    color: var(--cc-accent);
 }
 
 .cc-row .currency-icon-crypto {
@@ -276,6 +312,13 @@ h1:focus { outline: none; }
 .cc-selector-item .si-name {
     color: var(--cc-text-secondary);
     font-size: .85rem;
+}
+
+.cc-selector-empty {
+    padding: 1.2rem 1rem;
+    text-align: center;
+    color: var(--cc-text-secondary);
+    font-size: .88rem;
 }
 
 /* ── Add-row button ─────────────────────────────────────────────── */
@@ -617,6 +660,19 @@ h1:focus { outline: none; }
 
 .about-footer a:hover {
     text-decoration: underline;
+}
+
+.cc-loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    border: 1px solid var(--cc-border);
+    background: var(--cc-surface);
+    border-radius: 12px;
+    padding: .55rem .75rem;
+    font-size: .84rem;
+    color: var(--cc-text-secondary);
 }
 
 /* ── Loading / errors ───────────────────────────────────────────── */

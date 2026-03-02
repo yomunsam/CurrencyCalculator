@@ -1,0 +1,15 @@
+@if (IsOpen)
+{
+    <div class="cc-modal-backdrop" @onclick="OnClose">
+        <div class="cc-modal cc-modal-sm" @onclick:stopPropagation="true">
+            <button class="close-btn" @onclick="OnClose"><i class="bi bi-x-lg"></i></button>
+            <p style="font-size:.9rem;margin:0;">@Message</p>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public string Message { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+}
