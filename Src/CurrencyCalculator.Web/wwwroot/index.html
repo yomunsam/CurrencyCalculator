@@ -76,7 +76,7 @@
             },
             getStepHeight: function () {
                 var rows = document.querySelectorAll('.cc-row');
-                if (rows.length < 2) return rows.length === 1 ? rows[0].getBoundingClientRect().height + 8 : 68;
+                if (rows.length < 2) return rows.length === 1 ? rows[0].getBoundingClientRect().height + 8 : 68; /* 8 = flex gap, 68 = approx row height + gap fallback */
                 return rows[1].getBoundingClientRect().top - rows[0].getBoundingClientRect().top;
             }
         };

@@ -3,7 +3,7 @@
 <div class="cc-row @(IsActive ? "is-active" : "") @(IsDragging ? "is-dragging" : "")"
      style="@DragStyle"
      @onclick="OnSetActive"
-     @onclick:stopPropagation="@IsDragging">
+     @onclick:stopPropagation="@IsDragging"> @* Prevent row activation when finishing a drag *@
     <button class="row-drag-handle" @ref="_handleRef" title="Reorder"
             @onpointerdown="HandlePointerDown"
             @onpointermove="OnDragPointerMove"

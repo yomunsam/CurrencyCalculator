@@ -358,7 +358,7 @@
         DragPendingIndex = index;
         DragStartClientY = eventArgs.ClientY;
         DragStepHeight = await JS.InvokeAsync<double>("ccDrag.getStepHeight");
-        if (DragStepHeight <= 0) DragStepHeight = 68;
+        if (DragStepHeight <= 0) DragStepHeight = 68; // fallback: approx row height (60px) + flex gap (8px)
     }
 
     private Task OnRowDragPointerMoveAsync(int _, PointerEventArgs eventArgs)
