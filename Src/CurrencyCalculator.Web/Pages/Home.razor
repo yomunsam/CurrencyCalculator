@@ -159,11 +159,13 @@
     private int? EditingRowIndex { get; set; }
     private string? RawEditingInput { get; set; }
     private List<string> RecentSelectorCodes { get; set; } = [];
+    private int? DragPendingIndex { get; set; }
     private int? DraggingIndex { get; set; }
     private double DragStartClientY { get; set; }
     private double DragCurrentOffsetY { get; set; }
     private double DragStepHeight { get; set; }
     private int? DragTargetIndex { get; set; }
+    private const double DragActivationThresholdPx = 4;
 
     protected override async Task OnInitializedAsync()
     {
@@ -353,21 +355,28 @@
     private async Task OnRowDragPointerDownAsync(int index, PointerEventArgs eventArgs)
     {
         ResetDragState();
-        DraggingIndex = index;
+        DragPendingIndex = index;
         DragStartClientY = eventArgs.ClientY;
-        DragCurrentOffsetY = 0;
-        DragTargetIndex = index;
         DragStepHeight = await JS.InvokeAsync<double>("ccDrag.getStepHeight");
         if (DragStepHeight <= 0) DragStepHeight = 68;
     }
 
     private Task OnRowDragPointerMoveAsync(int _, PointerEventArgs eventArgs)
     {
-        if (DraggingIndex is null) return Task.CompletedTask;
+        if (DragPendingIndex is null && DraggingIndex is null) return Task.CompletedTask;
 
-        DragCurrentOffsetY = eventArgs.ClientY - DragStartClientY;
+        var deltaY = eventArgs.ClientY - DragStartClientY;
+
+        if (DraggingIndex is null)
+        {
+            if (Math.Abs(deltaY) < DragActivationThresholdPx) return Task.CompletedTask;
+            DraggingIndex = DragPendingIndex;
+            DragPendingIndex = null;
+        }
+
+        DragCurrentOffsetY = deltaY;
         var targetOffset = (int)Math.Round(DragCurrentOffsetY / DragStepHeight);
-        DragTargetIndex = Math.Clamp(DraggingIndex.Value + targetOffset, 0, CompareItems.Count - 1);
+        DragTargetIndex = Math.Clamp(DraggingIndex!.Value + targetOffset, 0, CompareItems.Count - 1);
 
         return Task.CompletedTask;
     }
@@ -417,6 +426,7 @@
 
     private void ResetDragState()
     {
+        DragPendingIndex = null;
         DraggingIndex = null;
         DragTargetIndex = null;
         DragCurrentOffsetY = 0;
