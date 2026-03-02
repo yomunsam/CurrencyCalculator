@@ -294,9 +294,8 @@
         SelectorOpen = false;
         CompareItems[SelectorTargetIndex].CurrencyCode = code;
         UpdateRecentSelectorCodes(code);
-        await SaveRecentSelectorCodesAsync();
         RecalculateFromActive();
-        await SavePreferencesAsync();
+        await Task.WhenAll(SaveRecentSelectorCodesAsync(), SavePreferencesAsync());
     }
 
     private async Task AddItemAsync()
@@ -364,7 +363,7 @@
 
         try
         {
-            await Task.Delay(300, DragLongPressCts.Token);
+            await Task.Delay(AppSettings.RowDragLongPressMs, DragLongPressCts.Token);
             if (!DragLongPressCts.IsCancellationRequested && IsDragPointerDown && DragPendingIndex == index)
             {
                 DraggingIndex = index;
@@ -383,7 +382,7 @@
 
         var deltaX = eventArgs.ClientX - DragStartX.Value;
         var deltaY = eventArgs.ClientY - DragStartY.Value;
-        if (Math.Abs(deltaX) > 10 && Math.Abs(deltaX) > Math.Abs(deltaY))
+        if (Math.Abs(deltaX) > AppSettings.RowDragHorizontalCancelThresholdPx && Math.Abs(deltaX) > Math.Abs(deltaY))
             CancelDragPendingState();
 
         return Task.CompletedTask;
@@ -529,7 +528,7 @@
         var pinnedCodes = RecentSelectorCodes
             .Where(code => availableByCode.ContainsKey(code))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(3)
+            .Take(AppSettings.SelectorRecentMaxCount)
             .ToList();
 
         var pinnedSet = pinnedCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -549,7 +548,7 @@
             .Where(code => !string.IsNullOrWhiteSpace(code) && CurrencyCatalog.IsSupported(code))
             .Select(code => code.ToUpperInvariant())
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(3)
+            .Take(AppSettings.SelectorRecentMaxCount)
             .ToList() ?? [];
     }
 
@@ -562,8 +561,8 @@
     {
         RecentSelectorCodes.RemoveAll(existing => existing.Equals(code, StringComparison.OrdinalIgnoreCase));
         RecentSelectorCodes.Insert(0, code.ToUpperInvariant());
-        if (RecentSelectorCodes.Count > 3)
-            RecentSelectorCodes = RecentSelectorCodes.Take(3).ToList();
+        if (RecentSelectorCodes.Count > AppSettings.SelectorRecentMaxCount)
+            RecentSelectorCodes = RecentSelectorCodes.Take(AppSettings.SelectorRecentMaxCount).ToList();
     }
 
     private System.Globalization.CultureInfo GetCultureForLanguage() => CurrentLanguage switch
