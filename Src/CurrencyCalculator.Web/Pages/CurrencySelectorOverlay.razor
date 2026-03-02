@@ -1,0 +1,38 @@
+@if (IsOpen)
+{
+    <div class="cc-selector-backdrop" @onclick="OnClose">
+        <div class="cc-selector" @onclick:stopPropagation="true">
+            @if (Items.Count == 0)
+            {
+                <div class="cc-selector-empty">@EmptyMessage</div>
+            }
+            else
+            {
+                @foreach (var item in Items)
+                {
+                    <button class="cc-selector-item" @onclick="() => OnSelect.InvokeAsync(item.Code)">
+                        @if (item.Kind == CurrencyKind.Fiat)
+                        {
+                            <img class="si-flag" src="https://flagcdn.com/w40/@(item.Icon).png" alt="@item.Code" loading="lazy" />
+                        }
+                        else
+                        {
+                            <span class="si-crypto">@item.Icon</span>
+                        }
+                        <span class="si-code">@item.Code</span>
+                        <span class="si-name">@item.GetName(CurrentLanguage)</span>
+                    </button>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public string CurrentLanguage { get; set; } = "en-US";
+    [Parameter, EditorRequired] public IReadOnlyList<CurrencyDefinition> Items { get; set; } = [];
+    [Parameter, EditorRequired] public string EmptyMessage { get; set; } = "";
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<string> OnSelect { get; set; }
+}

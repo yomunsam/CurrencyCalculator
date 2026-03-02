@@ -12,6 +12,8 @@
 - 🔢 输入支持数学表达式（如 `100*1.2`、`(50+30)/3`）
 - 🌐 en-US / zh-CN 双语，浏览器语言自动匹配
 - 💾 localStorage 持久化偏好与汇率缓存
+- 🧩 Home 页面 UI 已拆分为可复用组件（货币行、选择浮层、弹窗）
+- ↕️ 货币项支持长按拖拽排序，并记忆排序与最近选择偏好
 - 📱 响应式紧凑卡片布局，移动端友好
 - 🔧 数据驱动架构 — 新增币种/语言只需添加一行配置
 
@@ -23,7 +25,8 @@
   - `Models/`：状态模型（CompareItemState、UserPreferences、ExchangeRatesSnapshot）
   - `Services/`：业务服务（LocalizationService、BrowserStorageService）
   - `Services/Rates/`：汇率数据源与编排
-  - `Pages/Home.razor`：单页主界面
+  - `Pages/Home.razor`：页面状态编排
+  - `Pages/*.razor`：可复用 UI 组件（货币行、Selector Overlay、Modal）
 - `.github/workflows/`：GitHub Actions（部署 + fallback 更新）
 - `Docs/`：项目文档
 

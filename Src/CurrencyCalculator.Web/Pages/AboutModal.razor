@@ -1,0 +1,55 @@
+@if (IsOpen)
+{
+    <div class="cc-modal-backdrop" @onclick="OnClose">
+        <div class="cc-modal cc-modal-about" @onclick:stopPropagation="true">
+            <button class="close-btn" @onclick="OnClose"><i class="bi bi-x-lg"></i></button>
+
+            <h2>@Localize("AboutTitle")</h2>
+            <p class="about-text">@Localize("AboutDesc")</p>
+
+            <h3 class="about-section-title">@Localize("AboutDataSources")</h3>
+            <ul class="about-list">
+                <li>
+                    <i class="bi bi-github me-1"></i>
+                    <a href="https://github.com/fawazahmed0/exchange-api" target="_blank" rel="noreferrer">fawazahmed0/exchange-api</a>
+                </li>
+                <li>
+                    <a href="https://www.frankfurter.app/" target="_blank" rel="noreferrer">Frankfurter</a>
+                </li>
+            </ul>
+
+            <h3 class="about-section-title">@Localize("AboutTechStack")</h3>
+            <div class="about-tags">
+                <span class="about-tag">Blazor WebAssembly</span>
+                <span class="about-tag">.NET 10</span>
+                <span class="about-tag">PWA</span>
+                <span class="about-tag">GitHub Actions</span>
+            </div>
+
+            <h3 class="about-section-title">@Localize("AboutAIDisclosure")</h3>
+            <p class="about-text">@Localize("AboutAIDisclosureText")</p>
+
+            <h3 class="about-section-title">@Localize("AboutDisclaimer")</h3>
+            <ol class="about-disclaimer">
+                <li>@Localize("AboutDisclaimer1")</li>
+                <li>@Localize("AboutDisclaimer2")</li>
+                <li>@Localize("AboutDisclaimer3")</li>
+            </ol>
+
+            <div class="about-footer">
+                <p>
+                    <i class="bi bi-person me-1"></i>@Localize("AboutDeveloper"): Yomu
+                </p>
+                <a href="https://github.com/yomunsam/CurrencyCalculator" target="_blank" rel="noreferrer">
+                    <i class="bi bi-github me-1"></i>@Localize("AboutGitHub")
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = _ => "";
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+}
