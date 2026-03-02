@@ -6,7 +6,7 @@
 
 - 🌓 Dark Mode / Light Mode（自动检测系统主题，可手动切换）
 - 💱 多币种对比（2~5 项），焦点行为基准自动换算
-- 🪙 10 法币 + 2 加密币（USD、CNY、EUR、JPY、GBP、HKD、AUD、CAD、CHF、NZD、BTC、ETH）
+- 🪙 13 法币 + 2 加密币（USD、CNY、EUR、JPY、GBP、HKD、MOP、SGD、AUD、CAD、CHF、NZD、TWD、BTC、ETH）
 - ⚡ 实时汇率优先，失败逐级回退（缓存 → 静态 fallback）
 - ⏰ 过期检测：法币 >24h、加密 >1h 显示警告
 - 🔢 输入支持数学表达式（如 `100*1.2`、`(50+30)/3`）
@@ -63,6 +63,7 @@ dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Relea
 | 操作 | 位置 | 说明 |
 |------|------|------|
 | 新增货币 | `Core/CurrencyCatalog.cs` | 添加一行 `Fiat()/Crypto()` 定义 |
+| 快速新增货币指引 | `Docs/新增货币类型指南.md` | 包含代码、fallback、验证完整流程 |
 | 新增语言 | `Services/LocalizationService.cs` | 添加 `LanguageEntry` + 翻译字典 |
 | 新增数据源 | 实现 `IExchangeRateProvider` | 在 `Program.cs` 注册即可 |
 | 调整阈值 | `Core/AppSettings.cs` | 对比项上限、过期时间等 |
