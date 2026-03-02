@@ -1,8 +1,11 @@
-<div class="cc-row @(IsActive ? "is-active" : "") @(IsDragPending ? "is-drag-pending" : "") @(IsDragging ? "is-dragging" : "")"
+@inject IJSRuntime JS
+
+<div class="cc-row @(IsActive ? "is-active" : "") @(IsDragging ? "is-dragging" : "")"
+     style="@DragStyle"
      @onclick="OnSetActive"
-     @onpointerenter="OnDragEnter">
-    <button class="row-drag-handle" title="Reorder"
-            @onpointerdown="OnDragPointerDown"
+     @onclick:stopPropagation="@IsDragging">
+    <button class="row-drag-handle" @ref="_handleRef" title="Reorder"
+            @onpointerdown="HandlePointerDown"
             @onpointermove="OnDragPointerMove"
             @onpointerup="OnDragPointerUp"
             @onpointercancel="OnDragPointerCancel"
@@ -42,10 +45,10 @@
         }
     }
 
-    <input class="amount-input" type="text" inputmode="decimal"
+    <input class="amount-input" type="text" inputmode="decimal" @ref="_inputRef"
            value="@DisplayAmount"
            placeholder="0"
-           @onfocus="OnFocus"
+           @onfocus="HandleFocus"
            @onblur="OnBlur"
            @oninput="OnInput" />
 
@@ -66,6 +69,10 @@
 </div>
 
 @code {
+    private ElementReference _handleRef;
+    private ElementReference _inputRef;
+    private bool _pendingCursorToEnd;
+
     [Parameter, EditorRequired] public CurrencyDefinition Currency { get; set; } = default!;
     [Parameter, EditorRequired] public string CurrentLanguage { get; set; } = "en-US";
     [Parameter, EditorRequired] public string DisplayAmount { get; set; } = "";
@@ -74,8 +81,8 @@
     [Parameter] public bool IsActive { get; set; }
     [Parameter] public bool CanRemove { get; set; }
     [Parameter] public bool IsCryptoStale { get; set; }
-    [Parameter] public bool IsDragPending { get; set; }
     [Parameter] public bool IsDragging { get; set; }
+    [Parameter] public string? DragStyle { get; set; }
 
     [Parameter, EditorRequired] public EventCallback OnSetActive { get; set; }
     [Parameter, EditorRequired] public EventCallback OnOpenSelector { get; set; }
@@ -89,5 +96,25 @@
     [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerMove { get; set; }
     [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerUp { get; set; }
     [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerCancel { get; set; }
-    [Parameter, EditorRequired] public EventCallback OnDragEnter { get; set; }
+
+    private async Task HandlePointerDown(PointerEventArgs e)
+    {
+        await JS.InvokeVoidAsync("ccDrag.capture", _handleRef, e.PointerId);
+        await OnDragPointerDown.InvokeAsync(e);
+    }
+
+    private async Task HandleFocus()
+    {
+        await OnFocus.InvokeAsync();
+        _pendingCursorToEnd = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingCursorToEnd)
+        {
+            _pendingCursorToEnd = false;
+            await JS.InvokeVoidAsync("ccFocus.cursorToEnd", _inputRef);
+        }
+    }
 }

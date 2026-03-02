@@ -88,24 +88,15 @@ h1:focus { outline: none; }
     display: flex;
     align-items: center;
     gap: .5rem;
-    transition: box-shadow .15s, border-color .15s;
+    transition: transform .2s ease, box-shadow .15s, border-color .15s;
     box-shadow: var(--cc-shadow);
     position: relative;
 }
 
-.cc-row.is-drag-pending {
-    animation: cc-hold-pulse .45s ease-in-out infinite alternate;
-}
-
 .cc-row.is-dragging {
-    opacity: .86;
-    transform: scale(1.01);
     box-shadow: 0 8px 22px rgba(0,0,0,.2);
-}
-
-@keyframes cc-hold-pulse {
-    from { transform: scale(1); }
-    to { transform: scale(1.01); }
+    z-index: 100;
+    transition: box-shadow .15s;
 }
 
 .cc-row.is-active {
