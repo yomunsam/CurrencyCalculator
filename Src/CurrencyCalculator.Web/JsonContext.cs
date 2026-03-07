@@ -9,6 +9,9 @@ namespace CurrencyCalculator.Web;
 /// .NET IL trimmer can remove all reflection-based JSON paths, keeping the
 /// published output as small as possible.
 /// </summary>
+[JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(bool?))]
+[JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(ExchangeRatesSnapshot))]
 [JsonSerializable(typeof(UserPreferences))]
 [JsonSerializable(typeof(List<string>))]
