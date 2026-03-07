@@ -1,22 +1,28 @@
 {
-  "name": "CurrencyCalculator.Web",
-  "short_name": "CurrencyCalculator.Web",
+  "name": "Currency Calculator",
+  "short_name": "Currency Calc",
+  "description": "Real-time multi-currency exchange rate calculator with offline support",
   "id": "./",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#03173d",
+  "orientation": "portrait",
+  "background_color": "#f0f2f5",
+  "theme_color": "#3b82f6",
   "prefer_related_applications": false,
+  "categories": ["finance", "utilities"],
   "icons": [
     {
       "src": "icon-512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     },
     {
       "src": "icon-192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     }
   ]
 }

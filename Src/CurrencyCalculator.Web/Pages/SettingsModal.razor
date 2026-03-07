@@ -1,0 +1,36 @@
+@if (IsOpen)
+{
+    <div class="cc-modal-backdrop" @onclick="OnClose">
+        <div class="cc-modal cc-modal-settings" @onclick:stopPropagation="true">
+            <button class="close-btn" @onclick="OnClose"><i class="bi bi-x-lg"></i></button>
+
+            <h2>@Localize("Settings")</h2>
+
+            <div class="settings-item">
+                <div class="settings-item-text">
+                    <span class="settings-item-label">@Localize("IgnoreFiatDecimals")</span>
+                    <span class="settings-item-desc">@Localize("IgnoreFiatDecimalsDesc")</span>
+                </div>
+                <label class="cc-toggle">
+                    <input type="checkbox" checked="@IgnoreFiatDecimals"
+                           @onchange="OnToggleIgnoreFiatDecimals" />
+                    <span class="cc-toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool IgnoreFiatDecimals { get; set; }
+    [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = null!;
+    [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> OnIgnoreFiatDecimalsChanged { get; set; }
+
+    private async Task OnToggleIgnoreFiatDecimals(ChangeEventArgs e)
+    {
+        var value = (bool)(e.Value ?? false);
+        await OnIgnoreFiatDecimalsChanged.InvokeAsync(value);
+    }
+}

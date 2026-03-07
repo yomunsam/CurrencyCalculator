@@ -126,6 +126,7 @@ h1:focus { outline: none; }
     cursor: grab;
     padding: 0;
     flex-shrink: 0;
+    touch-action: none;
 }
 
 .cc-row .row-drag-handle:active {
@@ -569,6 +570,81 @@ h1:focus { outline: none; }
 .cc-modal-sm {
     max-width: 320px;
     padding: 1.25rem;
+}
+
+/* ── Settings modal ─────────────────────────────────────────────── */
+.cc-modal-settings {
+    max-width: 380px;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .6rem 0;
+}
+
+.settings-item-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.settings-item-label {
+    font-size: .9rem;
+    font-weight: 600;
+}
+
+.settings-item-desc {
+    font-size: .78rem;
+    color: var(--cc-text-secondary);
+    line-height: 1.4;
+    margin-top: .15rem;
+}
+
+/* ── Toggle switch ──────────────────────────────────────────────── */
+.cc-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.cc-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.cc-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--cc-border);
+    border-radius: 24px;
+    transition: background .2s;
+}
+
+.cc-toggle-slider::before {
+    content: "";
+    position: absolute;
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: transform .2s;
+}
+
+.cc-toggle input:checked + .cc-toggle-slider {
+    background: var(--cc-accent);
+}
+
+.cc-toggle input:checked + .cc-toggle-slider::before {
+    transform: translateX(20px);
 }
 
 .about-text {
