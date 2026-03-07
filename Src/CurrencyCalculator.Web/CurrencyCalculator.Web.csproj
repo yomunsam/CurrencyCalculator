@@ -6,6 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <!-- Trim unused IL code from the published output to reduce download size -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Use the browser's built-in Intl APIs instead of shipping the large ICU data bundle -->
+    <HybridGlobalization>true</HybridGlobalization>
   </PropertyGroup>
 
   <ItemGroup>

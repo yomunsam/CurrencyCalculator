@@ -5,11 +5,16 @@ namespace CurrencyCalculator.Web.Services;
 
 /// <summary>
 /// Provides typed get/set/remove operations over browser localStorage via JS interop.
-/// All values are serialized to JSON using System.Text.Json.
+/// All values are serialized to JSON using System.Text.Json with a source-generated
+/// context (<see cref="AppJsonContext"/>) so the IL trimmer can remove reflection-based
+/// JSON paths and keep the published download size small.
 /// </summary>
 public sealed class BrowserStorageService(IJSRuntime jsRuntime)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        TypeInfoResolver = AppJsonContext.Default
+    };
 
     public ValueTask RemoveAsync(string key)
     {

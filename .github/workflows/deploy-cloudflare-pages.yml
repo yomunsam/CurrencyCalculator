@@ -31,6 +31,9 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
+      - name: Install wasm-tools workload
+        run: dotnet workload install wasm-tools
+
       - name: Restore
         run: dotnet restore Src/CurrencyCalculator.slnx
 
