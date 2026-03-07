@@ -56,7 +56,8 @@
 
         // Browser helpers
         window.ccBrowser = {
-            getLanguage: () => navigator.language || "en-US"
+            getLanguage: () => navigator.language || "en-US",
+            getTimezone: () => Intl.DateTimeFormat().resolvedOptions().timeZone || ""
         };
 
         // Theme helpers
