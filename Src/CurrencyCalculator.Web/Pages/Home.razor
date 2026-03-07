@@ -509,7 +509,7 @@
         {
             // Show up to 6 decimals but trim trailing zeros
             var formatted = amount.ToString($"N{decimals}", culture);
-            return TrimTrailingDecimalZeros(formatted);
+            return TrimTrailingDecimalZeros(formatted, culture.NumberFormat.NumberDecimalSeparator);
         }
         return amount.ToString($"N{decimals}", culture);
     }
@@ -521,20 +521,16 @@
         return currency.DisplayDecimals;
     }
 
-    private static string TrimTrailingDecimalZeros(string formatted)
+    private static string TrimTrailingDecimalZeros(string formatted, string decimalSeparator)
     {
-        // Find the decimal separator (could be . or , depending on culture)
-        var dotIndex = formatted.LastIndexOf('.');
-        var commaIndex = formatted.LastIndexOf(',');
-        var sepIndex = Math.Max(dotIndex, commaIndex);
+        var sepIndex = formatted.LastIndexOf(decimalSeparator, StringComparison.Ordinal);
         if (sepIndex < 0) return formatted;
 
-        // Check if the part after decimal separator (ignoring group separators) has trailing zeros
         var end = formatted.Length - 1;
         while (end > sepIndex && formatted[end] == '0')
             end--;
         if (end == sepIndex)
-            end--; // remove the decimal separator too
+            end -= decimalSeparator.Length; // remove the decimal separator too
         return formatted[..(end + 1)];
     }
 
