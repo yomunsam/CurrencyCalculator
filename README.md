@@ -53,6 +53,7 @@ dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Relea
 ```
 
 - 输出目录：`publish/wwwroot`
+- 缓存控制：发布产物中的 `wwwroot/_headers` 会为 `service-worker.js`、`service-worker-assets.js`、`index.html` 和 `manifest.webmanifest` 下发禁缓存头，避免 Cloudflare Pages 边缘缓存放大 PWA 版本错配问题。
 
 ## fallback 汇率更新
 

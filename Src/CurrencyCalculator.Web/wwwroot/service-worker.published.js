@@ -44,18 +44,34 @@ async function onActivate(event) {
 }
 
 async function onFetch(event) {
-    let cachedResponse = null;
-    if (event.request.method === 'GET') {
-        // For all navigation requests, try to serve index.html from cache,
-        // unless that request is for an offline resource.
-        // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
-        const shouldServeIndexHtml = event.request.mode === 'navigate'
-            && !manifestUrlList.some(url => url === event.request.url);
-
-        const request = shouldServeIndexHtml ? 'index.html' : event.request;
-        const cache = await caches.open(cacheName);
-        cachedResponse = await cache.match(request);
+    if (event.request.method !== 'GET') {
+        return fetch(event.request);
     }
 
-    return cachedResponse || fetch(event.request);
+    const cache = await caches.open(cacheName);
+
+    // Use network-first for navigations so online refreshes do not get stuck on
+    // a stale cached shell after a new deployment. Fall back to the cached shell
+    // only when the network is unavailable.
+    const isNavigationRequest = event.request.mode === 'navigate'
+        && !manifestUrlList.some(url => url === event.request.url);
+
+    if (isNavigationRequest) {
+        try {
+            return await fetch(event.request);
+        } catch {
+            return (await cache.match('index.html')) || Response.error();
+        }
+    }
+
+    const cachedResponse = await cache.match(event.request);
+    if (cachedResponse) {
+        return cachedResponse;
+    }
+
+    try {
+        return await fetch(event.request);
+    } catch {
+        return Response.error();
+    }
 }
