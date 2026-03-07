@@ -51,6 +51,20 @@ jobs:
             echo "Root Pages repo detected — base href stays as /"
           fi
 
+      # After modifying index.html the pre-computed SHA-256 hash in the service-
+      # worker asset manifest no longer matches.  Recalculate it so the service
+      # worker's integrity check doesn't reject the file at runtime.
+      - name: Fix service-worker integrity hash for index.html
+        run: |
+          INDEX_FILE="publish/wwwroot/index.html"
+          MANIFEST="publish/wwwroot/service-worker-assets.js"
+          if [ -f "$INDEX_FILE" ] && [ -f "$MANIFEST" ]; then
+            NEW_HASH="sha256-$(openssl dgst -sha256 -binary "$INDEX_FILE" | openssl base64 -A)"
+            echo "New index.html integrity hash: $NEW_HASH"
+            # Replace the hash for the index.html entry in the manifest JSON
+            sed -i "s|\"hash\":\"sha256-[^\"]*\",\"url\":\"index.html\"|\"hash\":\"$NEW_HASH\",\"url\":\"index.html\"|g" "$MANIFEST"
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
