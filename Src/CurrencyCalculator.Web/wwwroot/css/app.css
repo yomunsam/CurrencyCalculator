@@ -577,6 +577,46 @@ h1:focus { outline: none; }
     max-width: 380px;
 }
 
+/* ── Currency icon warning modal ────────────────────────────────── */
+.cc-modal-icon-warning {
+    max-width: 460px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.icon-warning-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: .75rem;
+}
+
+.icon-warning-body {
+    font-size: .85rem;
+    line-height: 1.6;
+    color: var(--cc-text-secondary);
+}
+
+.icon-warning-body p {
+    margin-bottom: .5rem;
+}
+
+.icon-warning-body ul {
+    padding-left: 1.2rem;
+    margin-bottom: .5rem;
+}
+
+.icon-warning-body li {
+    margin-bottom: .25rem;
+}
+
+.icon-warning-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
 .settings-item {
     display: flex;
     align-items: center;

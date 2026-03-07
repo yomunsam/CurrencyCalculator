@@ -17,20 +17,65 @@
                     <span class="cc-toggle-slider"></span>
                 </label>
             </div>
+
+            <div class="settings-item">
+                <div class="settings-item-text">
+                    <span class="settings-item-label">@Localize("HideCurrencyIcons")</span>
+                    <span class="settings-item-desc">@Localize("HideCurrencyIconsDesc")</span>
+                </div>
+                <label class="cc-toggle">
+                    <input type="checkbox" checked="@HideCurrencyIcons"
+                           @onchange="OnToggleHideCurrencyIcons" />
+                    <span class="cc-toggle-slider"></span>
+                </label>
+            </div>
         </div>
     </div>
 }
 
+<CurrencyIconWarningModal IsOpen="_showIconWarning"
+    OnCancel="OnIconWarningCancel"
+    OnConfirm="OnIconWarningConfirm" />
+
 @code {
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public bool IgnoreFiatDecimals { get; set; }
+    [Parameter] public bool HideCurrencyIcons { get; set; }
+    [Parameter] public bool IsChinaTimezone { get; set; }
     [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = null!;
     [Parameter, EditorRequired] public EventCallback OnClose { get; set; }
     [Parameter, EditorRequired] public EventCallback<bool> OnIgnoreFiatDecimalsChanged { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> OnHideCurrencyIconsChanged { get; set; }
+
+    private bool _showIconWarning;
 
     private async Task OnToggleIgnoreFiatDecimals(ChangeEventArgs e)
     {
         var value = (bool)(e.Value ?? false);
         await OnIgnoreFiatDecimalsChanged.InvokeAsync(value);
+    }
+
+    private async Task OnToggleHideCurrencyIcons(ChangeEventArgs e)
+    {
+        var value = (bool)(e.Value ?? false);
+        // value=false means user wants to SHOW icons (unchecking HideCurrencyIcons)
+        if (!value && IsChinaTimezone)
+        {
+            _showIconWarning = true;
+            return;
+        }
+        await OnHideCurrencyIconsChanged.InvokeAsync(value);
+    }
+
+    private void OnIconWarningCancel()
+    {
+        _showIconWarning = false;
+        // Do not change the setting; icons remain hidden
+    }
+
+    private async Task OnIconWarningConfirm()
+    {
+        _showIconWarning = false;
+        await OnHideCurrencyIconsChanged.InvokeAsync(false);
     }
 }

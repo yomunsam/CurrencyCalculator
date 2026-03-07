@@ -12,4 +12,10 @@ public sealed class BrowserContextService(IJSRuntime jsRuntime)
         var language = await jsRuntime.InvokeAsync<string?>("ccBrowser.getLanguage");
         return language ?? "en-US";
     }
+
+    public async Task<string> GetTimezoneAsync()
+    {
+        var timezone = await jsRuntime.InvokeAsync<string?>("ccBrowser.getTimezone");
+        return timezone ?? "";
+    }
 }

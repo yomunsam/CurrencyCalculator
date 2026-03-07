@@ -1,0 +1,35 @@
+@if (IsOpen)
+{
+    <div class="cc-modal-backdrop" @onclick="OnCancel">
+        <div class="cc-modal cc-modal-icon-warning" @onclick:stopPropagation="true">
+            <h3 class="icon-warning-title"><i class="bi bi-exclamation-circle"></i> 温馨提示 · 货币图标使用声明</h3>
+            <div class="icon-warning-body">
+                <p>
+                    本工具界面中展示的货币图标（包括法币国旗及加密货币标识）均来源于互联网公开接口与公共资源。
+                    其中部分标识（如政治实体旗帜、加密货币符号等）可能因个人信仰、政治立场或文化背景的差异，
+                    引起部分用户的不适感。
+                </p>
+                <p>开发者郑重说明：</p>
+                <ul>
+                    <li>所有图标均来自第三方公开资源，仅作展示用途，不代表开发者的任何立场或主张；</li>
+                    <li>为尊重不同用户的感受，本功能默认已为您关闭，您可随时在设置中重新关闭货币图标；</li>
+                    <li>开发者不对因展示上述图标所引发的任何不适或争议承担责任。</li>
+                </ul>
+                <p>
+                    如您确认已了解上述情况，并自愿选择开启货币图标显示，请点击"确认开启"。
+                    如有顾虑，建议保持关闭状态。
+                </p>
+            </div>
+            <div class="icon-warning-actions">
+                <button class="btn btn-secondary" @onclick="OnCancel">取消，保持关闭</button>
+                <button class="btn btn-primary" @onclick="OnConfirm">我已了解，确认开启</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnCancel { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnConfirm { get; set; }
+}

@@ -11,13 +11,16 @@
                 @foreach (var item in Items)
                 {
                     <button class="cc-selector-item" @onclick="() => OnSelect.InvokeAsync(item.Code)">
-                        @if (item.Kind == CurrencyKind.Fiat)
+                        @if (!HideCurrencyIcons)
                         {
-                            <img class="si-flag" src="img/fiat_icons/@(item.Icon).svg" alt="@item.Code" loading="lazy" />
-                        }
-                        else
-                        {
-                            <span class="si-crypto">@item.Icon</span>
+                            @if (item.Kind == CurrencyKind.Fiat)
+                            {
+                                <img class="si-flag" src="img/fiat_icons/@(item.Icon).svg" alt="@item.Code" loading="lazy" />
+                            }
+                            else
+                            {
+                                <span class="si-crypto">@item.Icon</span>
+                            }
                         }
                         <span class="si-code">@item.Code</span>
                         <span class="si-name">@item.GetName(CurrentLanguage)</span>
@@ -30,6 +33,7 @@
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public bool HideCurrencyIcons { get; set; }
     [Parameter, EditorRequired] public string CurrentLanguage { get; set; } = "en-US";
     [Parameter, EditorRequired] public IReadOnlyList<CurrencyDefinition> Items { get; set; } = [];
     [Parameter, EditorRequired] public string EmptyMessage { get; set; } = "";

@@ -2,6 +2,7 @@
 @inject ExchangeRateService ExchangeRateService
 @inject LocalizationService LocalizationService
 @inject BrowserStorageService BrowserStorageService
+@inject BrowserContextService BrowserContextService
 @inject IJSRuntime JS
 
 <PageTitle>@L("AppTitle")</PageTitle>
@@ -50,6 +51,7 @@
             CanRemove="CompareItems.Count > AppSettings.MinCompareItems"
             IsCryptoStale="IsCryptoStale(currency)"
             IsDragging="DraggingIndex == rowIndex"
+            HideCurrencyIcons="HideCurrencyIcons"
             DragStyle="@GetDragStyle(rowIndex)"
             OnSetActive="() => SetActiveIndex(rowIndex)"
             OnOpenSelector="() => OpenSelector(rowIndex)"
@@ -131,14 +133,18 @@
 <CurrencySelectorOverlay
     IsOpen="SelectorOpen"
     CurrentLanguage="@CurrentLanguage"
+    HideCurrencyIcons="HideCurrencyIcons"
     Items="GetSelectableCurrencies()"
     EmptyMessage="@L("NoMoreCurrencies")"
     OnClose="CloseSelector"
     OnSelect="SelectCurrencyAsync" />
 
 <AboutModal IsOpen="ShowAbout" Localize="L" OnClose="CloseAbout" />
-<SettingsModal IsOpen="ShowSettings" IgnoreFiatDecimals="IgnoreFiatDecimals" Localize="L"
-               OnClose="CloseSettings" OnIgnoreFiatDecimalsChanged="OnIgnoreFiatDecimalsChangedAsync" />
+<SettingsModal IsOpen="ShowSettings" IgnoreFiatDecimals="IgnoreFiatDecimals"
+               HideCurrencyIcons="HideCurrencyIcons" IsChinaTimezone="IsChinaTimezone"
+               Localize="L" OnClose="CloseSettings"
+               OnIgnoreFiatDecimalsChanged="OnIgnoreFiatDecimalsChangedAsync"
+               OnHideCurrencyIconsChanged="OnHideCurrencyIconsChangedAsync" />
 <CryptoWarningModal IsOpen="ShowCryptoModal" Message="@CryptoModalMessage" OnClose="CloseCryptoModal" />
 
 @if (ShowLanguageMenu)
@@ -168,6 +174,8 @@
     private int? DragPendingIndex { get; set; }
     private int? DraggingIndex { get; set; }
     private bool IgnoreFiatDecimals { get; set; }
+    private bool HideCurrencyIcons { get; set; }
+    private bool IsChinaTimezone { get; set; }
     private double DragStartClientY { get; set; }
     private double DragCurrentOffsetY { get; set; }
     private double DragStepHeight { get; set; }
@@ -179,6 +187,13 @@
         CurrentLanguage = await LocalizationService.InitializeLanguageAsync();
         IsDarkMode = await JS.InvokeAsync<bool>("ccTheme.isDark");
         IgnoreFiatDecimals = await BrowserStorageService.GetAsync<bool>(AppSettings.IgnoreFiatDecimalsStorageKey);
+
+        var timezone = await BrowserContextService.GetTimezoneAsync();
+        IsChinaTimezone = timezone.StartsWith("Asia/Shanghai", StringComparison.OrdinalIgnoreCase)
+                       || timezone.StartsWith("Asia/Urumqi", StringComparison.OrdinalIgnoreCase);
+        var storedHideIcons = await BrowserStorageService.GetAsync<bool?>(AppSettings.HideCurrencyIconsStorageKey);
+        HideCurrencyIcons = storedHideIcons ?? IsChinaTimezone;
+
         await LoadRecentSelectorCodesAsync();
 
         var preferences = await BrowserStorageService.GetAsync<UserPreferences>(AppSettings.PreferencesStorageKey);
@@ -366,6 +381,12 @@
         IgnoreFiatDecimals = value;
         await BrowserStorageService.SetAsync(AppSettings.IgnoreFiatDecimalsStorageKey, value);
         RecalculateFromActive();
+    }
+
+    private async Task OnHideCurrencyIconsChangedAsync(bool value)
+    {
+        HideCurrencyIcons = value;
+        await BrowserStorageService.SetAsync(AppSettings.HideCurrencyIconsStorageKey, value);
     }
 
     private async Task OnRowDragPointerDownAsync(int index, PointerEventArgs eventArgs)

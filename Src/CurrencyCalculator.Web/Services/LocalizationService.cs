@@ -66,7 +66,9 @@ public sealed class LocalizationService(
             ["Copyright"] = "Copyright © 2026 Yomu",
             ["Settings"] = "Settings",
             ["IgnoreFiatDecimals"] = "Ignore fiat decimal spec",
-            ["IgnoreFiatDecimalsDesc"] = "Show up to 6 decimal places instead of ISO 4217 standard"
+            ["IgnoreFiatDecimalsDesc"] = "Show up to 6 decimal places instead of ISO 4217 standard",
+            ["HideCurrencyIcons"] = "Hide currency icons",
+            ["HideCurrencyIconsDesc"] = "Do not display flag and symbol icons next to currency codes"
         },
         ["zh-CN"] = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -109,7 +111,9 @@ public sealed class LocalizationService(
             ["Copyright"] = "Copyright © 2026 Yomu",
             ["Settings"] = "设置",
             ["IgnoreFiatDecimals"] = "忽略法币小数位规范",
-            ["IgnoreFiatDecimalsDesc"] = "显示最多6位小数，而非 ISO 4217 标准"
+            ["IgnoreFiatDecimalsDesc"] = "显示最多6位小数，而非 ISO 4217 标准",
+            ["HideCurrencyIcons"] = "隐藏货币图标",
+            ["HideCurrencyIconsDesc"] = "不在货币代码旁显示国旗和标识图标"
         },
         ["ja-JP"] = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -152,7 +156,9 @@ public sealed class LocalizationService(
             ["Copyright"] = "Copyright © 2026 Yomu",
             ["Settings"] = "設定",
             ["IgnoreFiatDecimals"] = "法定通貨の小数桁仕様を無視",
-            ["IgnoreFiatDecimalsDesc"] = "ISO 4217 標準ではなく、最大6桁の小数を表示"
+            ["IgnoreFiatDecimalsDesc"] = "ISO 4217 標準ではなく、最大6桁の小数を表示",
+            ["HideCurrencyIcons"] = "通貨アイコンを非表示",
+            ["HideCurrencyIconsDesc"] = "通貨コードの横に国旗やシンボルアイコンを表示しない"
         }
     };
 
