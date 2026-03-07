@@ -116,6 +116,9 @@
             <i class="bi bi-arrow-clockwise"></i>
             <span>@L("Refresh")</span>
         </button>
+        <button class="footer-btn" @onclick="() => ShowSettings = true" title="@L("Settings")">
+            <i class="bi bi-gear"></i>
+        </button>
         <button class="footer-btn" @onclick="() => ShowAbout = true" title="@L("AboutTitle")">
             <i class="bi bi-info-circle"></i>
             <span>@L("AboutTitle")</span>
@@ -134,6 +137,8 @@
     OnSelect="SelectCurrencyAsync" />
 
 <AboutModal IsOpen="ShowAbout" Localize="L" OnClose="CloseAbout" />
+<SettingsModal IsOpen="ShowSettings" IgnoreFiatDecimals="IgnoreFiatDecimals" Localize="L"
+               OnClose="CloseSettings" OnIgnoreFiatDecimalsChanged="OnIgnoreFiatDecimalsChangedAsync" />
 <CryptoWarningModal IsOpen="ShowCryptoModal" Message="@CryptoModalMessage" OnClose="CloseCryptoModal" />
 
 @if (ShowLanguageMenu)
@@ -151,6 +156,7 @@
     private string? ErrorMessage { get; set; }
     private bool IsDarkMode { get; set; }
     private bool ShowAbout { get; set; }
+    private bool ShowSettings { get; set; }
     private bool ShowLanguageMenu { get; set; }
     private bool ShowCryptoModal { get; set; }
     private string CryptoModalMessage { get; set; } = "";
@@ -161,6 +167,7 @@
     private List<string> RecentSelectorCodes { get; set; } = [];
     private int? DragPendingIndex { get; set; }
     private int? DraggingIndex { get; set; }
+    private bool IgnoreFiatDecimals { get; set; }
     private double DragStartClientY { get; set; }
     private double DragCurrentOffsetY { get; set; }
     private double DragStepHeight { get; set; }
@@ -171,6 +178,7 @@
     {
         CurrentLanguage = await LocalizationService.InitializeLanguageAsync();
         IsDarkMode = await JS.InvokeAsync<bool>("ccTheme.isDark");
+        IgnoreFiatDecimals = await BrowserStorageService.GetAsync<bool>(AppSettings.IgnoreFiatDecimalsStorageKey);
         await LoadRecentSelectorCodesAsync();
 
         var preferences = await BrowserStorageService.GetAsync<UserPreferences>(AppSettings.PreferencesStorageKey);
@@ -351,6 +359,14 @@
 
     private void CloseCryptoModal() => ShowCryptoModal = false;
     private void CloseAbout() => ShowAbout = false;
+    private void CloseSettings() => ShowSettings = false;
+
+    private async Task OnIgnoreFiatDecimalsChangedAsync(bool value)
+    {
+        IgnoreFiatDecimals = value;
+        await BrowserStorageService.SetAsync(AppSettings.IgnoreFiatDecimalsStorageKey, value);
+        RecalculateFromActive();
+    }
 
     private async Task OnRowDragPointerDownAsync(int index, PointerEventArgs eventArgs)
     {
@@ -471,7 +487,8 @@
             if (!HasRate(baseItem.CurrencyCode) || !HasRate(item.CurrencyCode)) continue;
             var converted = ExchangeRateService.Convert(baseItem.Amount, baseItem.CurrencyCode, item.CurrencyCode, LatestSnapshot);
             var def = CurrencyCatalog.GetByCode(item.CurrencyCode);
-            item.Amount = decimal.Round(converted, def.DisplayDecimals);
+            var decimals = GetEffectiveDecimals(def);
+            item.Amount = decimal.Round(converted, decimals);
         }
     }
 
@@ -487,7 +504,38 @@
     {
         if (amount == 0m) return "";
         var culture = GetCultureForLanguage();
-        return amount.ToString($"N{currency.DisplayDecimals}", culture);
+        var decimals = GetEffectiveDecimals(currency);
+        if (IgnoreFiatDecimals && currency.Kind == CurrencyKind.Fiat)
+        {
+            // Show up to 6 decimals but trim trailing zeros
+            var formatted = amount.ToString($"N{decimals}", culture);
+            return TrimTrailingDecimalZeros(formatted);
+        }
+        return amount.ToString($"N{decimals}", culture);
+    }
+
+    private int GetEffectiveDecimals(CurrencyDefinition currency)
+    {
+        if (IgnoreFiatDecimals && currency.Kind == CurrencyKind.Fiat)
+            return 6;
+        return currency.DisplayDecimals;
+    }
+
+    private static string TrimTrailingDecimalZeros(string formatted)
+    {
+        // Find the decimal separator (could be . or , depending on culture)
+        var dotIndex = formatted.LastIndexOf('.');
+        var commaIndex = formatted.LastIndexOf(',');
+        var sepIndex = Math.Max(dotIndex, commaIndex);
+        if (sepIndex < 0) return formatted;
+
+        // Check if the part after decimal separator (ignoring group separators) has trailing zeros
+        var end = formatted.Length - 1;
+        while (end > sepIndex && formatted[end] == '0')
+            end--;
+        if (end == sepIndex)
+            end--; // remove the decimal separator too
+        return formatted[..(end + 1)];
     }
 
     private string FormatEditingInput(string raw, CurrencyDefinition currency)

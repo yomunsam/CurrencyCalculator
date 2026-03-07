@@ -6,7 +6,7 @@ namespace CurrencyCalculator.Web.Core;
 /// Central registry of supported currencies.
 /// To add a new fiat currency: add one <c>Fiat(...)</c> line below.
 /// To add a new cryptocurrency: add one <c>Crypto(...)</c> line.
-/// Icon = 2-letter country code for fiat (used with flagcdn.com) or symbol for crypto.
+/// Icon = 2-letter country code for fiat (flag SVG in wwwroot/img/fiat_icons) or symbol for crypto.
 /// </summary>
 public static class CurrencyCatalog
 {

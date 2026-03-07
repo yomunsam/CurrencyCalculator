@@ -13,7 +13,7 @@
                     <button class="cc-selector-item" @onclick="() => OnSelect.InvokeAsync(item.Code)">
                         @if (item.Kind == CurrencyKind.Fiat)
                         {
-                            <img class="si-flag" src="https://flagcdn.com/w40/@(item.Icon).png" alt="@item.Code" loading="lazy" />
+                            <img class="si-flag" src="img/fiat_icons/@(item.Icon).svg" alt="@item.Code" loading="lazy" />
                         }
                         else
                         {
