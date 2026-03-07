@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $supportedCodes = @(
-    "USD","CNY","EUR","JPY","GBP","HKD","AUD","CAD","CHF","NZD","TWD","BTC","ETH"
+    "USD","CNY","EUR","JPY","GBP","HKD","MOP","SGD","AUD","CAD","CHF","NZD","TWD","BTC","ETH"
 )
 
 Write-Host "Fetching rates from fawaz exchange-api..."

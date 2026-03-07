@@ -1,0 +1,120 @@
+@inject IJSRuntime JS
+
+<div class="cc-row @(IsActive ? "is-active" : "") @(IsDragging ? "is-dragging" : "")"
+     style="@DragStyle"
+     @onclick="OnSetActive"
+     @onclick:stopPropagation="@IsDragging"> @* Prevent row activation when finishing a drag *@
+    <button class="row-drag-handle" @ref="_handleRef" title="Reorder"
+            @onpointerdown="HandlePointerDown"
+            @onpointermove="OnDragPointerMove"
+            @onpointerup="OnDragPointerUp"
+            @onpointercancel="OnDragPointerCancel"
+            @onpointerdown:preventDefault="true"
+            @onclick:stopPropagation="true">
+        <i class="bi bi-grip-vertical"></i>
+    </button>
+
+    @if (Currency.Kind == CurrencyKind.Fiat)
+    {
+        <img class="currency-flag" src="https://flagcdn.com/w40/@(Currency.Icon).png"
+             alt="@Currency.Code" loading="lazy" />
+    }
+    else
+    {
+        <span class="currency-icon-crypto">@Currency.Icon</span>
+    }
+
+    <div class="currency-info" style="width:4.5rem;">
+        <span class="currency-code" @onclick="OnOpenSelector" @onclick:stopPropagation="true">
+            @Currency.Code <i class="bi bi-chevron-down" style="font-size:.6rem;"></i>
+        </span>
+        <span class="currency-name">@Currency.GetName(CurrentLanguage)</span>
+    </div>
+
+    @if (Currency.Kind == CurrencyKind.Crypto)
+    {
+        @if (IsCryptoStale)
+        {
+            <i class="bi bi-exclamation-triangle-fill crypto-warn-stale"
+               @onclick="() => OnShowCryptoWarning.InvokeAsync(true)" @onclick:stopPropagation="true"></i>
+        }
+        else
+        {
+            <i class="bi bi-exclamation-circle-fill crypto-warn-volatile"
+               @onclick="() => OnShowCryptoWarning.InvokeAsync(false)" @onclick:stopPropagation="true"></i>
+        }
+    }
+
+    <input class="amount-input" type="text" inputmode="decimal" @ref="_inputRef"
+           value="@DisplayAmount"
+           placeholder="0"
+           @onfocus="HandleFocus"
+           @onblur="OnBlur"
+           @oninput="OnInput" />
+
+    @if (IsActive)
+    {
+        <button class="row-btn" @onclick="OnClear" @onclick:stopPropagation="true" title="@ClearTitle">
+            <i class="bi bi-eraser"></i>
+        </button>
+    }
+    else
+    {
+        <button class="row-btn" @onclick="OnRemove" @onclick:stopPropagation="true"
+                disabled="@(!CanRemove)"
+                title="@RemoveTitle">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    }
+</div>
+
+@code {
+    private ElementReference _handleRef;
+    private ElementReference _inputRef;
+    private bool _pendingCursorToEnd;
+
+    [Parameter, EditorRequired] public CurrencyDefinition Currency { get; set; } = default!;
+    [Parameter, EditorRequired] public string CurrentLanguage { get; set; } = "en-US";
+    [Parameter, EditorRequired] public string DisplayAmount { get; set; } = "";
+    [Parameter, EditorRequired] public string ClearTitle { get; set; } = "Clear";
+    [Parameter, EditorRequired] public string RemoveTitle { get; set; } = "Remove";
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public bool CanRemove { get; set; }
+    [Parameter] public bool IsCryptoStale { get; set; }
+    [Parameter] public bool IsDragging { get; set; }
+    [Parameter] public string? DragStyle { get; set; }
+
+    [Parameter, EditorRequired] public EventCallback OnSetActive { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnOpenSelector { get; set; }
+    [Parameter, EditorRequired] public EventCallback<bool> OnShowCryptoWarning { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnFocus { get; set; }
+    [Parameter, EditorRequired] public EventCallback<FocusEventArgs> OnBlur { get; set; }
+    [Parameter, EditorRequired] public EventCallback<ChangeEventArgs> OnInput { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnClear { get; set; }
+    [Parameter, EditorRequired] public EventCallback OnRemove { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerDown { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerMove { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerUp { get; set; }
+    [Parameter, EditorRequired] public EventCallback<PointerEventArgs> OnDragPointerCancel { get; set; }
+
+    private async Task HandlePointerDown(PointerEventArgs e)
+    {
+        await JS.InvokeVoidAsync("ccDrag.capture", _handleRef, e.PointerId);
+        await OnDragPointerDown.InvokeAsync(e);
+    }
+
+    private async Task HandleFocus()
+    {
+        await OnFocus.InvokeAsync();
+        _pendingCursorToEnd = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_pendingCursorToEnd)
+        {
+            _pendingCursorToEnd = false;
+            await JS.InvokeVoidAsync("ccFocus.cursorToEnd", _inputRef);
+        }
+    }
+}

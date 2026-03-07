@@ -20,6 +20,8 @@ public static class CurrencyCatalog
         Fiat("JPY", "jp", 0, "Japanese Yen", "日元", "日本円"),
         Fiat("GBP", "gb", 2, "British Pound", "英镑", "英ポンド"),
         Fiat("HKD", "hk", 2, "Hong Kong Dollar", "港币", "香港ドル"),
+        Fiat("MOP", "mo", 2, "Macanese Pataca", "澳门元", "マカオ・パタカ"),
+        Fiat("SGD", "sg", 2, "Singapore Dollar", "新加坡元", "シンガポールドル"),
         Fiat("AUD", "au", 2, "Australian Dollar", "澳元", "豪ドル"),
         Fiat("CAD", "ca", 2, "Canadian Dollar", "加元", "カナダドル"),
         Fiat("CHF", "ch", 2, "Swiss Franc", "瑞士法郎", "スイスフラン"),
