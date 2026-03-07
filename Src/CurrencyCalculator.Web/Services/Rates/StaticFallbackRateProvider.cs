@@ -17,7 +17,10 @@ public sealed class StaticFallbackRateProvider(HttpClient httpClient, ILogger<St
     {
         try
         {
-            var snapshot = await httpClient.GetFromJsonAsync<ExchangeRatesSnapshot>("fallback/latest-rates.json", cancellationToken);
+            var snapshot = await httpClient.GetFromJsonAsync(
+                "fallback/latest-rates.json",
+                AppJsonContext.Default.ExchangeRatesSnapshot,
+                cancellationToken);
             if (snapshot is null || snapshot.RatesFromBase.Count == 0)
             {
                 return ProviderFetchResult.Fail("Fallback file is empty.");
