@@ -21,7 +21,7 @@ public static partial class MathExpressionEvaluator
         if (string.IsNullOrWhiteSpace(input))
             return false;
 
-        // Strip thousand-separators (commas) and whitespace
+        // Strip thousand-separators (commas), underscores and whitespace
         var cleaned = input.Replace(",", "").Replace(" ", "").Replace("_", "");
 
         // Fast path: plain number
@@ -35,8 +35,17 @@ public static partial class MathExpressionEvaluator
         try
         {
             var tokens = Tokenize(cleaned);
-            result = Parse(tokens, 0, out _);
-            return true;
+
+            // Tokenization must consume the whole input (no invalid characters allowed)
+            if (tokens.Count == 0 || string.Concat(tokens) != cleaned)
+                return false;
+
+            result = Parse(tokens, 0, out var nextPos);
+            return nextPos == tokens.Count;
+        }
+        catch (DivideByZeroException)
+        {
+            return false;
         }
         catch
         {
@@ -62,6 +71,7 @@ public static partial class MathExpressionEvaluator
             var right = ParseTerm(tokens, nextPos + 1, out nextPos);
             left = op == "+" ? left + right : left - right;
         }
+
         return left;
     }
 
@@ -73,25 +83,32 @@ public static partial class MathExpressionEvaluator
         {
             var op = tokens[nextPos];
             var right = ParseFactor(tokens, nextPos + 1, out nextPos);
-            left = op == "*" ? left * right : right != 0 ? left / right : 0;
+            left = op == "*" ? left * right : right != 0 ? left / right : throw new DivideByZeroException();
         }
+
         return left;
     }
 
-    // factor = number | '(' expr ')'
+    // factor = ('+'|'-') factor | number | '(' expr ')'
     private static decimal ParseFactor(List<string> tokens, int pos, out int nextPos)
     {
         if (pos >= tokens.Count)
+            throw new FormatException("Unexpected end of expression.");
+
+        if (tokens[pos] is "+" or "-")
         {
-            nextPos = pos;
-            return 0;
+            var sign = tokens[pos] == "-" ? -1m : 1m;
+            var value = ParseFactor(tokens, pos + 1, out nextPos);
+            return sign * value;
         }
 
         if (tokens[pos] == "(")
         {
             var value = Parse(tokens, pos + 1, out nextPos);
-            if (nextPos < tokens.Count && tokens[nextPos] == ")")
-                nextPos++;
+            if (nextPos >= tokens.Count || tokens[nextPos] != ")")
+                throw new FormatException("Missing closing parenthesis.");
+
+            nextPos++;
             return value;
         }
 
@@ -101,8 +118,7 @@ public static partial class MathExpressionEvaluator
             return number;
         }
 
-        nextPos = pos + 1;
-        return 0;
+        throw new FormatException("Invalid token in expression.");
     }
 
     [GeneratedRegex(@"(\d+\.?\d*|\.\d+|[+\-*/()])", RegexOptions.Compiled)]
