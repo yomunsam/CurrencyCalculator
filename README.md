@@ -1,73 +1,56 @@
 # Currency Calculator
 
-一个基于 **Blazor WebAssembly + PWA + .NET 10** 的静态部署汇率计算器。
+基于 .NET 10、Blazor WebAssembly 的汇率计算器 PWA，纯静态部署，无需后端。
 
-## 特性
-
-- 🌓 Dark Mode / Light Mode（自动检测系统主题，可手动切换）
-- 💱 多币种对比（2~5 项），焦点行为基准自动换算
-- 🪙 13 法币 + 2 加密币（USD、CNY、EUR、JPY、GBP、HKD、MOP、SGD、AUD、CAD、CHF、NZD、TWD、BTC、ETH）
-- ⚡ 实时汇率优先，失败逐级回退（缓存 → 静态 fallback）
-- ⏰ 过期检测：法币 >24h、加密 >1h 显示警告
-- 🔢 输入支持数学表达式（如 `100*1.2`、`(50+30)/3`）
-- 🌐 en-US / zh-CN 双语，浏览器语言自动匹配
-- 💾 localStorage 持久化偏好与汇率缓存
-- 🧩 Home 页面 UI 已拆分为可复用组件（货币行、选择浮层、弹窗）
-- ↕️ 货币项支持长按拖拽排序，并记忆排序与最近选择偏好
-- 📱 响应式紧凑卡片布局，移动端友好
-- 🔧 数据驱动架构 — 新增币种/语言只需添加一行配置
-
-## 项目结构
-
-- `Src/CurrencyCalculator.slnx`：解决方案
-- `Src/CurrencyCalculator.Web`：Blazor WebAssembly PWA 项目
-  - `Core/`：领域模型（CurrencyCatalog、AppSettings、MathExpressionEvaluator）
-  - `Models/`：状态模型（CompareItemState、UserPreferences、ExchangeRatesSnapshot）
-  - `Services/`：业务服务（LocalizationService、BrowserStorageService）
-  - `Services/Rates/`：汇率数据源与编排
-  - `Pages/Home.razor`：页面状态编排
-  - `Pages/*.razor`：可复用 UI 组件（货币行、Selector Overlay、Modal）
-- `.github/workflows/`：GitHub Actions（部署 + fallback 更新）
-- `Docs/`：项目文档
+- 同时对比 2–5 个币种，以当前活动行为基准换算，支持数学表达式和拖动排序。
+- 支持 15 种法币：USD、CNY、EUR、JPY、GBP、HKD、MOP、SGD、AUD、CAD、CHF、NZD、TWD、PHP（菲律宾比索）、KRW（韩元），以及 BTC、ETH。
+- 英文、简体中文、日文；亮暗主题；本地保存偏好与汇率缓存。
+- 在线数据源依次为 fawaz exchange-api、Frankfurter（仅部分法币），失败后使用本地缓存、静态 fallback。法币超过 24 小时、加密币超过 1 小时提示过期。
+- 发布版通过 Service Worker 缓存应用资源，完成首次缓存后可离线使用。开发服务器不提供同等离线体验。
 
 ## 本地运行
 
-```bash
-dotnet restore Src/CurrencyCalculator.slnx
-dotnet run --project Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj
+需要 .NET 10 SDK。
+
+```sh
+dotnet run --project Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj --launch-profile http
 ```
 
-## 部署
+默认地址为 http://localhost:5085。构建命令：
 
-### GitHub Pages
+```sh
+dotnet build Src/CurrencyCalculator.slnx
+```
 
-1. 在仓库 Settings → Pages 中启用 `GitHub Actions`。
-2. 推送到 `main` 分支即可触发自动部署。
+## 代码位置
 
-### Cloudflare Pages
+| 位置 | 用途 |
+| --- | --- |
+| `Src/CurrencyCalculator.Web/Core/` | 币种目录、计算表达式、应用配置 |
+| `Src/CurrencyCalculator.Web/Models/` | 对比项、偏好和汇率快照 |
+| `Src/CurrencyCalculator.Web/Services/` | 国际化、浏览器存储与环境 |
+| `Src/CurrencyCalculator.Web/Services/Rates/` | 汇率数据源与回退编排 |
+| `Src/CurrencyCalculator.Web/Pages/` | 当前页面与 UI 组件 |
+| `Src/CurrencyCalculator.Web/wwwroot/` | 样式、图标、PWA 与静态汇率 |
+| `.github/` | 部署与 fallback 更新脚本 |
 
-- 构建命令：
+开发约定见 [AGENTS.md](AGENTS.md)，币种扩展见 [新增货币类型指南](Docs/新增货币类型指南.md)。`Docs/` 中初始需求、里程碑和架构决策保留为历史记录，可能与当前实现不同。
 
-```bash
+## 发布与维护
+
+```sh
 dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Release -o publish
 ```
 
-- 输出目录：`publish/wwwroot`
-- 缓存控制：发布产物中的 `wwwroot/_headers` 会为 `service-worker.js`、`service-worker-assets.js`、`index.html` 和 `manifest.webmanifest` 下发禁缓存头，避免 Cloudflare Pages 边缘缓存放大 PWA 版本错配问题。
+静态站点输出为 `publish/wwwroot`。现有 GitHub Actions 在推送 `master` 时部署：
 
-## fallback 汇率更新
+- **GitHub Pages**：仓库 Pages 设置选择 GitHub Actions；工作流调整仓库子路径的 base href，并更新 Service Worker 清单中的 index.html 哈希。
+- **Cloudflare Pages**：配置 `CLOUDFLARE_ACCOUNT_ID`、`CLOUDFLARE_API_TOKEN`，以及工作流内的 `CF_PROJECT_NAME`。`wwwroot/_headers` 控制入口与 PWA 更新文件的缓存。
 
-- 工作流：`.github/workflows/update-fallback-rates.yml`
-- 计划：每周一次（UTC 周一 02:00）
-- 脚本：`.github/scripts/update-fallback.ps1`
-- 输出：`Src/CurrencyCalculator.Web/wwwroot/fallback/latest-rates.json`
+fallback 工作流每周一 UTC 02:00 更新，也可在仓库根目录手动运行：
 
-## 扩展指南
+```powershell
+pwsh .github/scripts/update-fallback.ps1
+```
 
-| 操作 | 位置 | 说明 |
-|------|------|------|
-| 新增货币 | `Core/CurrencyCatalog.cs` | 添加一行 `Fiat()/Crypto()` 定义 |
-| 快速新增货币指引 | `Docs/新增货币类型指南.md` | 包含代码、fallback、验证完整流程 |
-| 新增语言 | `Services/LocalizationService.cs` | 添加 `LanguageEntry` + 翻译字典 |
-| 新增数据源 | 实现 `IExchangeRateProvider` | 在 `Program.cs` 注册即可 |
-| 调整阈值 | `Core/AppSettings.cs` | 对比项上限、过期时间等 |
+生成文件为 `Src/CurrencyCalculator.Web/wwwroot/fallback/latest-rates.json`。增加币种时应同步更新生成脚本并重新生成数据，不能只增加选择项。

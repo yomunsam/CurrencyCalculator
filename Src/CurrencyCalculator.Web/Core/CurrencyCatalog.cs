@@ -3,15 +3,11 @@ using System.Collections.ObjectModel;
 namespace CurrencyCalculator.Web.Core;
 
 /// <summary>
-/// Central registry of supported currencies.
-/// To add a new fiat currency: add one <c>Fiat(...)</c> line below.
-/// To add a new cryptocurrency: add one <c>Crypto(...)</c> line.
-/// Icon = 2-letter country code for fiat (flag SVG in wwwroot/img/fiat_icons) or symbol for crypto.
+/// 支持币种的统一目录；新增币种还需同步本地图标与静态汇率。
 /// </summary>
 public static class CurrencyCatalog
 {
-    // To add a new currency: add one entry here. Icon = 2-letter country code (fiat) or crypto symbol.
-    // Names dictionary keys must match LocalizationService.SupportedLanguages.
+    // 法币图标为本地 SVG 的国家或地区代码，名称覆盖当前支持的三种语言。
     private static readonly ReadOnlyCollection<CurrencyDefinition> ItemsInternal =
     [
         Fiat("USD", "us", 2, "US Dollar", "美元", "米ドル"),
@@ -27,6 +23,8 @@ public static class CurrencyCatalog
         Fiat("CHF", "ch", 2, "Swiss Franc", "瑞士法郎", "スイスフラン"),
         Fiat("NZD", "nz", 2, "New Zealand Dollar", "新西兰元", "NZドル"),
         Fiat("TWD", "tw", 0, "New Taiwan Dollar", "新台币", "台湾ドル"),
+        Fiat("PHP", "ph", 2, "Philippine Peso", "菲律宾比索", "フィリピン・ペソ"),
+        Fiat("KRW", "kr", 0, "South Korean Won", "韩元", "韓国ウォン"),
         Crypto("BTC", "₿", 8, "Bitcoin", "比特币", "ビットコイン"),
         Crypto("ETH", "Ξ", 8, "Ethereum", "以太坊", "イーサリアム")
     ];
@@ -51,7 +49,7 @@ public static class CurrencyCatalog
 
     public static bool IsSupported(string code) => ByCodeInternal.ContainsKey(code);
 
-    // ── helpers to keep the table compact ──────────────────────────────
+    // 集中构造定义，便于直接阅读上方币种表。
     private static CurrencyDefinition Fiat(string code, string icon, int decimals, string nameEn, string nameZh, string nameJa) =>
         new()
         {
