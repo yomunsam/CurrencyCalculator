@@ -14,7 +14,7 @@
             @if (Currency.Kind == CurrencyKind.Fiat)
             {
                 <img class="currency-flag" src="img/fiat_icons/@(Currency.Icon).svg"
-                     alt="@Currency.Code" loading="lazy" />
+                     alt="" loading="lazy" draggable="false" />
             }
             else
             {
@@ -43,18 +43,24 @@
             }
         }
 
-        <input class="amount-input" type="text" inputmode="decimal" @ref="_inputRef"
-               value="@DisplayAmount"
-               placeholder="0" aria-label="@(Currency.Code + " " + Localize("Amount"))"
-               @onfocus="HandleFocus"
-               @onblur="OnBlur"
-               @oninput="OnInput" />
+        <div class="amount-area">
+            <input class="amount-input" type="text" inputmode="decimal" @ref="_inputRef"
+                   style="--amount-characters: @(Math.Max(3, DisplayAmount.Length + 1))"
+                   value="@DisplayAmount"
+                   placeholder="0" aria-label="@(Currency.Code + " " + Localize("Amount"))"
+                   @onfocus="HandleFocus"
+                   @onblur="OnBlur"
+                   @oninput="OnInput" />
+        </div>
 
-        <button class="row-btn row-clear" @onclick="OnClear" @onclick:stopPropagation="true" title="@ClearTitle" aria-label="@(Currency.Code + " " + ClearTitle)">
+        <button class="row-btn row-clear @(!IsActive ? "is-hidden" : "")" disabled="@(!IsActive)"
+                @onclick="OnClear" @onclick:stopPropagation="true" title="@ClearTitle" aria-label="@(Currency.Code + " " + ClearTitle)">
             <i class="bi bi-eraser" aria-hidden="true"></i>
         </button>
     </div>
-    <div id="@_menuId" class="row-menu" popover="auto" role="menu" aria-label="@(Currency.Code + " " + Localize("RowActions"))">
+    <div id="@_menuId" class="row-menu" popover="manual" role="menu" aria-label="@(Currency.Code + " " + Localize("RowActions"))">
+        <button role="menuitem" class="row-copy" data-copy-value="@CopyValue"
+                data-copy-success="@Localize("CopySuccess")" data-copy-failed="@Localize("CopyFailed")">@Localize("CopyValue")</button>
         <button role="menuitem" @onclick="() => OnMove.InvokeAsync(-1)" disabled="@(!CanMoveUp)">@Localize("MoveUp")</button>
         <button role="menuitem" @onclick="() => OnMove.InvokeAsync(1)" disabled="@(!CanMoveDown)">@Localize("MoveDown")</button>
         <button role="menuitem" class="row-menu-delete" @onclick="OnRemove" disabled="@(!CanRemove)">@RemoveTitle</button>
@@ -69,6 +75,7 @@
     [Parameter, EditorRequired] public CurrencyDefinition Currency { get; set; } = default!;
     [Parameter, EditorRequired] public string CurrentLanguage { get; set; } = "en-US";
     [Parameter, EditorRequired] public string DisplayAmount { get; set; } = "";
+    [Parameter, EditorRequired] public string CopyValue { get; set; } = "";
     [Parameter, EditorRequired] public string ClearTitle { get; set; } = "Clear";
     [Parameter, EditorRequired] public string RemoveTitle { get; set; } = "Remove";
     [Parameter] public bool IsActive { get; set; }

@@ -47,6 +47,7 @@
             Currency="currency"
             CurrentLanguage="@CurrentLanguage"
             DisplayAmount="@GetDisplayAmount(row, currency)"
+            CopyValue="@row.Amount.ToString("0.############################", System.Globalization.CultureInfo.InvariantCulture)"
             IsActive="rowIndex == ActiveIndex"
             CanRemove="CompareItems.Count > AppSettings.MinCompareItems"
             IsCryptoStale="IsCryptoStale(currency)"

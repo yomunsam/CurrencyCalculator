@@ -80,6 +80,9 @@
     background: var(--cc-surface-hover);
 }
 .selector-item img {
+    pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
     width: 28px;
     height: 21px;
     object-fit: cover;

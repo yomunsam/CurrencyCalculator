@@ -11,7 +11,33 @@
 }
 .cc-row {
     touch-action: pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     transition: transform .15s ease;
+}
+.currency-flag {
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+.amount-area {
+    flex: 1;
+    min-width: 0;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.cc-row .amount-input {
+    flex: 0 1 auto;
+    width: calc(var(--amount-characters) * 1ch + .7rem);
+    max-width: 100%;
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.row-clear.is-hidden {
+    visibility: hidden;
 }
 .cc-row-shell.is-swiping .cc-row {
     transition: none;
@@ -45,6 +71,9 @@
     font-size: .6rem;
 }
 .row-menu {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     position: fixed;
     inset: auto;
     margin: 0;
@@ -57,6 +86,9 @@
     box-shadow: 0 8px 32px #0003;
 }
 .row-menu button {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
     display: block;
     width: 100%;
     text-align: left;

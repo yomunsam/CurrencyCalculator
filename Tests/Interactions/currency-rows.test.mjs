@@ -22,10 +22,16 @@ class Element {
         this.attributes = {};
         this.listeners = {};
         this.captured = new Set();
+        this.open = false;
     }
     matches(selector) {
         return selector.split(',').some(part => {
-            const value = part.trim();
+            const value = part.trim().replace(':not(:disabled)', '');
+            const separator = value.lastIndexOf(' ');
+            if (separator >= 0) {
+                return this.matches(value.slice(separator + 1))
+                    && Boolean(this.parent?.closest(value.slice(0, separator)));
+            }
             return value.startsWith('.') ? this.classes.has(value.slice(1)) : this.tag === value;
         });
     }
@@ -41,6 +47,9 @@ class Element {
     contains(target) { return this === target || this.children.some(child => child.contains(target)); }
     getBoundingClientRect() { return { top: this.top, left: 0, width: 400, height: 60 }; }
     setAttribute(name, value) { this.attributes[name] = value; }
+    showPopover() { this.open = true; }
+    hidePopover() { this.open = false; }
+    focus() { document.activeElement = this; }
     setPointerCapture(id) { this.captured.add(id); }
     hasPointerCapture(id) { return this.captured.has(id); }
     releasePointerCapture(id) { this.captured.delete(id); }
@@ -53,6 +62,8 @@ class Element {
 function fixture() {
     globalThis.document = new Element();
     globalThis.window = new Element();
+    globalThis.innerWidth = 800;
+    globalThis.innerHeight = 600;
     const list = new Element();
     const rows = [0, 68, 136].map(top => {
         const row = new Element('cc-row-shell', list, top);
@@ -60,15 +71,22 @@ function fixture() {
         new Element('row-swipe-delete', row, top, 'button');
         const card = new Element('cc-row', row, top);
         new Element('row-drag-handle', card, top, 'button');
-        new Element('amount-input', card, top, 'input');
+        new Element('currency-code', card, top, 'button');
+        const amountArea = new Element('amount-area', card, top);
+        new Element('amount-input', amountArea, top, 'input');
+        const menu = new Element('row-menu', row, top);
+        new Element('', menu, top, 'button');
         return row;
     });
     const calls = [];
     initialize(list, { invokeMethodAsync: async (...args) => calls.push(args) });
-    const send = (name, target, values = {}) => list.emit(name, {
-        target, pointerId: 1, isPrimary: true, button: 0, pointerType: 'mouse',
-        clientX: 100, clientY: 0, preventDefault() {}, stopImmediatePropagation() {}, ...values
-    });
+    const send = (name, target, values = {}) => {
+        if (name === 'lostpointercapture') target.releasePointerCapture(values.pointerId ?? 1);
+        return list.emit(name, {
+            target, pointerId: 1, isPrimary: true, button: 0, pointerType: 'mouse',
+            clientX: 100, clientY: 0, preventDefault() {}, stopImmediatePropagation() {}, ...values
+        });
+    };
     return { list, rows, calls, send, cleanup: () => dispose(list) };
 }
 
@@ -159,5 +177,99 @@ test('取消滑动不展开删除，最低行数限制不被手势绕过', async
     await f.send('pointerup', card, { clientX: 0 });
     assert.equal(f.rows[0].classList.contains('is-revealed'), false);
     assert.deepEqual(f.calls, []);
+    f.cleanup();
+});
+
+test('子元素隐式捕获转交整行不会把已露出的删除按钮复位', async () => {
+    const f = fixture();
+    const row = f.rows[0];
+    const child = row.querySelector('.currency-code');
+    child.setPointerCapture(1);
+    await f.send('pointerdown', child, { pointerType: 'touch' });
+    await f.send('pointermove', child, { clientX: 70 });
+    assert.equal(row.querySelector('.cc-row').style.transform, 'translateX(-30px)');
+    assert.equal(row.hasPointerCapture(1), true);
+    await f.send('lostpointercapture', child);
+    assert.equal(row.querySelector('.cc-row').style.transform, 'translateX(-30px)');
+    await f.send('pointermove', row, { clientX: 20 });
+    await f.send('pointerup', row, { clientX: 20 });
+    assert.equal(row.classList.contains('is-revealed'), true);
+    f.cleanup();
+});
+
+test('行中间空白支持滑动与右键，金额文字保留原生菜单', async () => {
+    const f = fixture();
+    const row = f.rows[0];
+    const area = row.querySelector('.amount-area');
+    await f.send('pointerdown', area, { pointerType: 'touch' });
+    await f.send('pointermove', area, { clientX: 20 });
+    await f.send('pointerup', area, { clientX: 20 });
+    assert.equal(row.classList.contains('is-revealed'), true);
+    await f.send('contextmenu', row.querySelector('input'));
+    assert.equal(row.querySelector('.row-menu').open, false);
+    await f.send('contextmenu', area);
+    assert.equal(row.querySelector('.row-menu').open, true);
+    f.cleanup();
+});
+
+test('触控长按中间空白打开行菜单，不依赖浏览器 contextmenu', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const f = fixture();
+    const row = f.rows[0];
+    const area = row.querySelector('.amount-area');
+    await f.send('pointerdown', area, { pointerType: 'touch' });
+    t.mock.timers.tick(550);
+    assert.equal(row.querySelector('.row-menu').open, true);
+    assert.deepEqual(f.calls, []);
+    f.cleanup();
+});
+
+test('滑动、抬手或系统取消都撤销待触发的长按菜单', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const f = fixture();
+    const row = f.rows[0];
+    const area = row.querySelector('.amount-area');
+    for (const action of ['pointermove', 'pointerup', 'pointercancel']) {
+        await f.send('pointerdown', area, { pointerType: 'touch' });
+        await f.send(action, area, { clientX: 50 });
+        t.mock.timers.tick(600);
+        assert.equal(row.querySelector('.row-menu').open, false);
+        await f.send('pointercancel', area);
+    }
+    f.cleanup();
+});
+
+test('长按松手及补发点击不关闭菜单，下一次点击菜单仍可执行', async t => {
+    t.mock.timers.enable({ apis: ['setTimeout'] });
+    const f = fixture();
+    const row = f.rows[0];
+    const area = row.querySelector('.amount-area');
+    const menu = row.querySelector('.row-menu');
+    const button = menu.querySelector('button');
+    await f.send('pointerdown', area, { pointerType: 'touch' });
+    t.mock.timers.tick(550);
+    assert.equal(menu.open, true);
+    assert.notEqual(document.activeElement, button);
+    await f.send('pointerup', row);
+    let swallowed = false;
+    await f.send('click', button, { stopImmediatePropagation: () => swallowed = true });
+    assert.equal(swallowed, true);
+    assert.equal(menu.open, true);
+    await f.send('pointerdown', button, { pointerType: 'touch' });
+    await f.send('click', button);
+    assert.equal(menu.open, false);
+    f.cleanup();
+});
+
+test('手动菜单松手后保留，后续外部按下才关闭', async () => {
+    const f = fixture();
+    const area = f.rows[0].querySelector('.amount-area');
+    await f.send('contextmenu', area);
+    const menu = f.rows[0].querySelector('.row-menu');
+    assert.equal(menu.open, true);
+    await f.send('pointerup', area);
+    assert.equal(menu.open, true);
+    await document.emit('pointerdown', { isPrimary: true, target: f.rows[1] });
+    assert.equal(menu.open, false);
     f.cleanup();
 });
