@@ -36,23 +36,21 @@
     <div class="alert alert-warning py-2 px-3" style="font-size:.85rem;" role="alert">@ErrorMessage</div>
 }
 
-<section class="d-flex flex-column gap-2 mb-2">
+<CurrencyComparisonList @ref="_comparisonList" OnReorder="ReorderItemsAsync">
     @for (var i = 0; i < CompareItems.Count; i++)
     {
         var row = CompareItems[i];
         var rowIndex = i;
         var currency = CurrencyCatalog.GetByCode(row.CurrencyCode);
 
-        <CurrencyRowItem @key="row.CurrencyCode"
+        <CurrencyRowItem @key="row"
             Currency="currency"
             CurrentLanguage="@CurrentLanguage"
             DisplayAmount="@GetDisplayAmount(row, currency)"
             IsActive="rowIndex == ActiveIndex"
             CanRemove="CompareItems.Count > AppSettings.MinCompareItems"
             IsCryptoStale="IsCryptoStale(currency)"
-            IsDragging="DraggingIndex == rowIndex"
             HideCurrencyIcons="HideCurrencyIcons"
-            DragStyle="@GetDragStyle(rowIndex)"
             OnSetActive="() => SetActiveIndex(rowIndex)"
             OnOpenSelector="() => OpenSelector(rowIndex)"
             OnShowCryptoWarning="ShowCryptoWarning"
@@ -63,17 +61,17 @@
             OnRemove="() => RemoveItemAsync(rowIndex)"
             ClearTitle="@L("Clear")"
             RemoveTitle="@L("Remove")"
-            OnDragPointerDown="eventArgs => OnRowDragPointerDownAsync(rowIndex, eventArgs)"
-            OnDragPointerMove="eventArgs => OnRowDragPointerMoveAsync(rowIndex, eventArgs)"
-            OnDragPointerUp="eventArgs => OnRowDragPointerUpAsync(rowIndex, eventArgs)"
-            OnDragPointerCancel="eventArgs => OnRowDragPointerCancelAsync(rowIndex, eventArgs)" />
+            Localize="L"
+            CanMoveUp="@(rowIndex > 0)"
+            CanMoveDown="@(rowIndex < CompareItems.Count - 1)"
+            OnMove="offset => ReorderItemsAsync((rowIndex, rowIndex + offset))" />
     }
 
     <button class="cc-add-row" @onclick="AddItemAsync"
             disabled="@(CompareItems.Count >= AppSettings.MaxCompareItems)">
         <i class="bi bi-plus-circle"></i>
     </button>
-</section>
+</CurrencyComparisonList>
 
 <div class="cc-ad-slot cc-ad-bottom d-none" aria-hidden="true"></div>
 
@@ -135,7 +133,8 @@
     CurrentLanguage="@CurrentLanguage"
     HideCurrencyIcons="HideCurrencyIcons"
     Items="GetSelectableCurrencies()"
-    EmptyMessage="@L("NoMoreCurrencies")"
+    RecentCodes="RecentSelectorCodes"
+    Localize="L"
     OnClose="CloseSelector"
     OnSelect="SelectCurrencyAsync" />
 
@@ -153,6 +152,8 @@
 }
 
 @code {
+    private CurrencyComparisonList? _comparisonList;
+    private int? _focusAfterRemoval;
     private string CurrentLanguage { get; set; } = "en-US";
     private List<CompareItemState> CompareItems { get; set; } = [];
     private ExchangeRatesSnapshot? LatestSnapshot { get; set; }
@@ -171,16 +172,9 @@
     private int? EditingRowIndex { get; set; }
     private string? RawEditingInput { get; set; }
     private List<string> RecentSelectorCodes { get; set; } = [];
-    private int? DragPendingIndex { get; set; }
-    private int? DraggingIndex { get; set; }
     private bool IgnoreFiatDecimals { get; set; }
     private bool HideCurrencyIcons { get; set; }
     private bool IsChinaTimezone { get; set; }
-    private double DragStartClientY { get; set; }
-    private double DragCurrentOffsetY { get; set; }
-    private double DragStepHeight { get; set; }
-    private int? DragTargetIndex { get; set; }
-    private const double DragActivationThresholdPx = 4;
 
     protected override async Task OnInitializedAsync()
     {
@@ -285,21 +279,23 @@
 
     private async Task OnAmountBlurAsync(int index, FocusEventArgs _)
     {
-        if (EditingRowIndex == index && RawEditingInput is not null && MathExpressionEvaluator.TryEvaluate(RawEditingInput, out var result))
+        if (EditingRowIndex != index) return;
+        var raw = RawEditingInput;
+        EditingRowIndex = null;
+        RawEditingInput = null;
+        if (raw is not null && MathExpressionEvaluator.TryEvaluate(raw, out var result))
         {
             CompareItems[index].Amount = result;
             RecalculateFromActive();
             await SavePreferencesAsync();
         }
-        EditingRowIndex = null;
-        RawEditingInput = null;
     }
 
     private async Task ClearAmountAsync(int index)
     {
+        SetActiveIndex(index);
         CompareItems[index].Amount = 0m;
-        EditingRowIndex = null;
-        RawEditingInput = null;
+        RawEditingInput = EditingRowIndex == index ? "" : null;
         RecalculateFromActive();
         await SavePreferencesAsync();
     }
@@ -336,11 +332,26 @@
     private async Task RemoveItemAsync(int index)
     {
         if (CompareItems.Count <= AppSettings.MinCompareItems) return;
+        var active = CompareItems[ActiveIndex];
+        var editing = EditingRowIndex is int editingIndex ? CompareItems[editingIndex] : null;
         CompareItems.RemoveAt(index);
-        if (ActiveIndex >= CompareItems.Count)
-            ActiveIndex = CompareItems.Count - 1;
+        ActiveIndex = CompareItems.IndexOf(active);
+        if (ActiveIndex < 0) ActiveIndex = Math.Min(index, CompareItems.Count - 1);
+        var newEditingIndex = editing is null ? -1 : CompareItems.IndexOf(editing);
+        EditingRowIndex = newEditingIndex < 0 ? null : newEditingIndex;
+        if (EditingRowIndex is null) RawEditingInput = null;
+        _focusAfterRemoval = Math.Min(index, CompareItems.Count - 1);
         RecalculateFromActive();
         await SavePreferencesAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusAfterRemoval is int index && _comparisonList is not null)
+        {
+            _focusAfterRemoval = null;
+            await _comparisonList.FocusRowAsync(index);
+        }
     }
 
     private async Task ToggleThemeAsync()
@@ -389,110 +400,22 @@
         await BrowserStorageService.SetAsync(AppSettings.HideCurrencyIconsStorageKey, value);
     }
 
-    private async Task OnRowDragPointerDownAsync(int index, PointerEventArgs eventArgs)
+    private async Task ReorderItemsAsync((int Source, int Target) move)
     {
-        ResetDragState();
-        DragPendingIndex = index;
-        DragStartClientY = eventArgs.ClientY;
-        DragStepHeight = await JS.InvokeAsync<double>("ccDrag.getStepHeight");
-        if (DragStepHeight <= 0) DragStepHeight = 68; // fallback: approx row height (60px) + flex gap (8px)
-    }
-
-    private Task OnRowDragPointerMoveAsync(int _, PointerEventArgs eventArgs)
-    {
-        if (DragPendingIndex is null && DraggingIndex is null) return Task.CompletedTask;
-
-        var deltaY = eventArgs.ClientY - DragStartClientY;
-
-        if (DraggingIndex is null)
+        if (move.Source == move.Target || move.Source < 0 || move.Source >= CompareItems.Count
+            || move.Target < 0 || move.Target >= CompareItems.Count)
         {
-            if (Math.Abs(deltaY) < DragActivationThresholdPx) return Task.CompletedTask;
-            DraggingIndex = DragPendingIndex;
-            DragPendingIndex = null;
+            return;
         }
 
-        DragCurrentOffsetY = deltaY;
-        var targetOffset = (int)Math.Round(DragCurrentOffsetY / DragStepHeight);
-        DragTargetIndex = Math.Clamp(DraggingIndex!.Value + targetOffset, 0, CompareItems.Count - 1);
-
-        return Task.CompletedTask;
-    }
-
-    private async Task OnRowDragPointerUpAsync(int _, PointerEventArgs __)
-    {
-        await FinalizeDragAsync();
-    }
-
-    private async Task OnRowDragPointerCancelAsync(int _, PointerEventArgs __)
-    {
-        await FinalizeDragAsync();
-    }
-
-    private async Task FinalizeDragAsync()
-    {
-        if (DraggingIndex is not null && DragTargetIndex is not null)
-        {
-            var sourceIndex = DraggingIndex.Value;
-            var targetIndex = DragTargetIndex.Value;
-
-            if (sourceIndex != targetIndex)
-            {
-                var moved = CompareItems[sourceIndex];
-                CompareItems.RemoveAt(sourceIndex);
-                CompareItems.Insert(targetIndex, moved);
-
-                if (ActiveIndex == sourceIndex)
-                {
-                    ActiveIndex = targetIndex;
-                }
-                else if (sourceIndex < ActiveIndex && targetIndex >= ActiveIndex)
-                {
-                    ActiveIndex--;
-                }
-                else if (sourceIndex > ActiveIndex && targetIndex <= ActiveIndex)
-                {
-                    ActiveIndex++;
-                }
-
-                await SavePreferencesAsync();
-            }
-        }
-
-        ResetDragState();
-    }
-
-    private void ResetDragState()
-    {
-        DragPendingIndex = null;
-        DraggingIndex = null;
-        DragTargetIndex = null;
-        DragCurrentOffsetY = 0;
-        DragStartClientY = 0;
-    }
-
-    private string? GetDragStyle(int index)
-    {
-        if (DraggingIndex is null || DragTargetIndex is null)
-            return null;
-
-        var dragIdx = DraggingIndex.Value;
-        var targetIdx = DragTargetIndex.Value;
-
-        if (index == dragIdx)
-        {
-            return $"transform:translateY({DragCurrentOffsetY:F0}px);z-index:100;position:relative;";
-        }
-
-        if (dragIdx != targetIdx)
-        {
-            if (targetIdx > dragIdx && index > dragIdx && index <= targetIdx)
-                return $"transform:translateY({-DragStepHeight:F0}px);";
-
-            if (targetIdx < dragIdx && index >= targetIdx && index < dragIdx)
-                return $"transform:translateY({DragStepHeight:F0}px);";
-        }
-
-        return null;
+        var active = CompareItems[ActiveIndex];
+        var editing = EditingRowIndex is int index ? CompareItems[index] : null;
+        var moved = CompareItems[move.Source];
+        CompareItems.RemoveAt(move.Source);
+        CompareItems.Insert(move.Target, moved);
+        ActiveIndex = CompareItems.IndexOf(active);
+        EditingRowIndex = editing is null ? null : CompareItems.IndexOf(editing);
+        await SavePreferencesAsync();
     }
 
     private void RecalculateFromActive()
@@ -594,26 +517,9 @@
 
     private IReadOnlyList<CurrencyDefinition> GetSelectableCurrencies()
     {
-        var selectedCodes = new HashSet<string>(CompareItems.Select(item => item.CurrencyCode), StringComparer.OrdinalIgnoreCase);
-        var available = CurrencyCatalog.Items.Where(item => !selectedCodes.Contains(item.Code)).ToList();
-        if (available.Count == 0)
-            return [];
-
-        var availableByCode = available.ToDictionary(item => item.Code, StringComparer.OrdinalIgnoreCase);
-        var pinnedCodes = RecentSelectorCodes
-            .Where(code => availableByCode.ContainsKey(code))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Take(AppSettings.SelectorRecentMaxCount)
-            .ToList();
-
-        var pinnedSet = pinnedCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var pinned = pinnedCodes.Select(code => availableByCode[code]);
-        var remainder = available
-            .Where(item => !pinnedSet.Contains(item.Code))
-            .OrderBy(item => item.Kind == CurrencyKind.Crypto ? 1 : 0)
-            .ThenBy(item => item.Code, StringComparer.OrdinalIgnoreCase);
-
-        return [.. pinned, .. remainder];
+        var selectedCodes = CompareItems.Select(item => item.CurrencyCode)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return CurrencyCatalog.Items.Where(item => !selectedCodes.Contains(item.Code)).ToArray();
     }
 
     private async Task LoadRecentSelectorCodesAsync()

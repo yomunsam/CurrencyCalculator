@@ -5,6 +5,8 @@
 - 同时对比 2–5 个币种，以当前活动行为基准换算，支持数学表达式和拖动排序。
 - 支持 15 种法币：USD、CNY、EUR、JPY、GBP、HKD、MOP、SGD、AUD、CAD、CHF、NZD、TWD、PHP（菲律宾比索）、KRW（韩元），以及 BTC、ETH。
 - 英文、简体中文、日文；亮暗主题；本地保存偏好与汇率缓存。
+- 货币选择器支持代码、当前语言和英文名称即时搜索，按最近使用、法币、加密币分组。
+- 清空按钮固定；触控左滑展开删除，右键或拖柄菜单提供删除与上移下移，拖柄支持直接排序。
 - 在线数据源依次为 fawaz exchange-api、Frankfurter（仅部分法币），失败后使用本地缓存、静态 fallback。法币超过 24 小时、加密币超过 1 小时提示过期。
 - 发布版通过 Service Worker 缓存应用资源，完成首次缓存后可离线使用。开发服务器不提供同等离线体验。
 
@@ -30,11 +32,14 @@ dotnet build Src/CurrencyCalculator.slnx
 | `Src/CurrencyCalculator.Web/Models/` | 对比项、偏好和汇率快照 |
 | `Src/CurrencyCalculator.Web/Services/` | 国际化、浏览器存储与环境 |
 | `Src/CurrencyCalculator.Web/Services/Rates/` | 汇率数据源与回退编排 |
-| `Src/CurrencyCalculator.Web/Pages/` | 当前页面与 UI 组件 |
+| `Src/CurrencyCalculator.Web/Pages/` | 页面状态与设置等弹窗 |
+| `Src/CurrencyCalculator.Web/Components/Currencies/` | 货币列表、货币行与搜索选择器 |
 | `Src/CurrencyCalculator.Web/wwwroot/` | 样式、图标、PWA 与静态汇率 |
 | `.github/` | 部署与 fallback 更新脚本 |
 
 开发约定见 [AGENTS.md](AGENTS.md)，币种扩展见 [新增货币类型指南](Docs/新增货币类型指南.md)。`Docs/` 中初始需求、里程碑和架构决策保留为历史记录，可能与当前实现不同。
+
+指针交互回归检查使用 Node.js 内置测试运行器：`node --test Tests/Interactions/*.test.mjs`。浏览器和真机验收边界见 [本轮交互验收](Docs/交互翻新验收.md)。
 
 ## 发布与维护
 
