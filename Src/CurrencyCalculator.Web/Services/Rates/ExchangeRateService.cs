@@ -3,76 +3,62 @@ using CurrencyCalculator.Web.Models;
 
 namespace CurrencyCalculator.Web.Services.Rates;
 
-/// <summary>
-/// Orchestrates exchange rate retrieval with a multi-tier fallback strategy:
-///   1. Live online API providers (fawazahmed0, Frankfurter)
-///   2. Browser localStorage cache (with configurable TTL)
-///   3. Static fallback JSON (pre-built by GitHub Actions)
-/// All rates are normalized to a USD base.
-/// </summary>
+/// <summary>协调在线汇率和本地快照，始终保留来源及原始时间戳。</summary>
 public sealed class ExchangeRateService(
     IEnumerable<IExchangeRateProvider> providers,
     BrowserStorageService browserStorageService,
-    ILogger<ExchangeRateService> _logger)
+    ILogger<ExchangeRateService> logger)
 {
-    /// <summary>
-    /// Retrieve the latest exchange rates.
-    /// When <paramref name="forceRefresh"/> is true, skips cache and fetches from live APIs.
-    /// Falls back to stale cache → static fallback if all APIs fail.
-    /// </summary>
+    /// <summary>启动先显示已有数据，不等待外部 API 超时。</summary>
+    public async Task<ExchangeRatesSnapshot?> GetAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var cached = await TryLoadCacheAsync(enforceTtl: false);
+        if (cached is not null) return cached;
+        foreach (var provider in providers.Where(provider => provider.IsFallbackProvider))
+        {
+            var snapshot = await FetchWithTimeoutAsync(provider, AppSettings.LocalProviderTimeout, cancellationToken);
+            if (snapshot is not null) return snapshot;
+        }
+        return null;
+    }
+
     public async Task<ExchangeRatesSnapshot> GetLatestAsync(bool forceRefresh = false, CancellationToken cancellationToken = default)
     {
-        var providerList = providers.ToArray();
-        var onlineProviders = providerList.Where(provider => !provider.IsFallbackProvider).ToArray();
-        var fallbackProviders = providerList.Where(provider => provider.IsFallbackProvider).ToArray();
-
-        // Strategy: always try live APIs first.
-        // Only use cache as fresh shortcut when NOT force-refreshing.
+        cancellationToken.ThrowIfCancellationRequested();
         if (!forceRefresh)
         {
-            var freshCache = await TryLoadCacheAsync(enforceTtl: true);
-            if (freshCache is not null)
-            {
-                return freshCache;
-            }
+            var cached = await TryLoadCacheAsync(enforceTtl: true);
+            if (cached is not null) return cached;
         }
-
-        // Try live online providers
-        foreach (var provider in onlineProviders)
+        foreach (var provider in providers.Where(provider => !provider.IsFallbackProvider))
         {
-            var result = await provider.FetchAsync(cancellationToken);
-            if (!result.Success || result.Snapshot is null)
-            {
-                _logger.LogWarning("Provider {Provider} failed or returned no data.", provider.Name);
-                continue;
-            }
-
-            var normalized = EnsureSupportedRates(result.Snapshot);
-            await browserStorageService.SetAsync(AppSettings.RatesCacheStorageKey, normalized);
-            return normalized;
+            var snapshot = await FetchWithTimeoutAsync(provider, AppSettings.OnlineProviderTimeout, cancellationToken);
+            if (snapshot is null) continue;
+            await browserStorageService.SetAsync(AppSettings.RatesCacheStorageKey, snapshot);
+            return snapshot;
         }
+        return await GetAvailableAsync(cancellationToken)
+            ?? throw new InvalidOperationException("No exchange rate source is currently available.");
+    }
 
-        // Fallback 1: any cached data (even stale)
-        var anyCache = await TryLoadCacheAsync(enforceTtl: false);
-        if (anyCache is not null)
+    private async Task<ExchangeRatesSnapshot?> FetchWithTimeoutAsync(
+        IExchangeRateProvider provider, TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        bounded.CancelAfter(timeout);
+        try
         {
-            _logger.LogInformation("Using stale cached rates.");
-            return anyCache;
+            var result = await provider.FetchAsync(bounded.Token);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (result.Success && result.Snapshot is not null)
+                return Normalize(result.Snapshot);
         }
-
-        // Fallback 2: static fallback JSON (built by GitHub Actions)
-        foreach (var provider in fallbackProviders)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            var result = await provider.FetchAsync(cancellationToken);
-            if (!result.Success || result.Snapshot is null)
-            {
-                continue;
-            }
-
-            return EnsureSupportedRates(result.Snapshot);
+            logger.LogWarning("Rate provider {Provider} timed out.", provider.Name);
         }
-
-        throw new InvalidOperationException("No exchange rate source is currently available.");
+        return null;
     }
 
     /// <summary>
@@ -104,54 +90,40 @@ public sealed class ExchangeRateService(
 
     private async Task<ExchangeRatesSnapshot?> TryLoadCacheAsync(bool enforceTtl)
     {
-        var snapshot = await browserStorageService.GetAsync<ExchangeRatesSnapshot>(AppSettings.RatesCacheStorageKey);
-        if (snapshot is null)
-        {
-            return null;
-        }
-
-        if (enforceTtl)
-        {
-            var age = DateTimeOffset.UtcNow - snapshot.FetchedAtUtc;
-            if (age > AppSettings.RatesCacheTtl)
-            {
-                return null;
-            }
-        }
-
+        var stored = await browserStorageService.GetAsync<ExchangeRatesSnapshot>(AppSettings.RatesCacheStorageKey);
+        if (stored is null) return null;
+        var snapshot = Normalize(stored);
+        if (snapshot is null) return null;
+        if (enforceTtl && DateTimeOffset.UtcNow - snapshot.FetchedAtUtc > AppSettings.RatesCacheTtl) return null;
         return new ExchangeRatesSnapshot
         {
             BaseCurrency = snapshot.BaseCurrency,
             FetchedAtUtc = snapshot.FetchedAtUtc,
-            Source = "Local Cache",
+            Source = snapshot.Source,
             SourceKind = ExchangeRatesSourceKind.LocalCache,
             RatesFromBase = snapshot.RatesFromBase
         };
     }
 
-    /// <summary>Normalize a snapshot to contain only currencies from <see cref="CurrencyCatalog"/>.</summary>
-    private static ExchangeRatesSnapshot EnsureSupportedRates(ExchangeRatesSnapshot snapshot)
+    private static ExchangeRatesSnapshot? Normalize(ExchangeRatesSnapshot snapshot)
     {
-        var normalizedRates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase)
+        // 损坏的缓存或非 USD 快照不能被重新标注为 USD 后参与换算。
+        if (!string.Equals(snapshot.BaseCurrency, "USD", StringComparison.OrdinalIgnoreCase)
+            || snapshot.RatesFromBase is null || snapshot.FetchedAtUtc == default)
+            return null;
+        var rates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (code, value) in snapshot.RatesFromBase)
         {
-            ["USD"] = snapshot.RatesFromBase.GetValueOrDefault("USD", 1m)
-        };
-
-        foreach (var code in CurrencyCatalog.SupportedCodes)
-        {
-            if (snapshot.RatesFromBase.TryGetValue(code, out var value) && value > 0)
-            {
-                normalizedRates[code] = value;
-            }
+            if (CurrencyCatalog.IsSupported(code) && value > 0) rates[code] = value;
         }
-
+        if (rates.GetValueOrDefault("USD") != 1m || rates.Count < 2) return null;
         return new ExchangeRatesSnapshot
         {
             BaseCurrency = "USD",
             FetchedAtUtc = snapshot.FetchedAtUtc,
             Source = snapshot.Source,
             SourceKind = snapshot.SourceKind,
-            RatesFromBase = normalizedRates
+            RatesFromBase = rates
         };
     }
 }

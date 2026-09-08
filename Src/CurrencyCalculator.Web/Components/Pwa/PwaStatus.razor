@@ -1,0 +1,46 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="pwa-status" role="status">
+    <h3 class="about-section-title">@Localize("OfflineAndUpdates")</h3>
+    <p class="about-text">@Localize(_status)</p>
+    @if (!_canPersist)
+    {
+        <p class="about-text">@Localize("StorageUnavailable")</p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = default!;
+    private string _status = "PwaPreparing";
+    private bool _canPersist = true;
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<PwaStatus>? _reference;
+    private int _subscription;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/pwa.js");
+        _reference = DotNetObjectReference.Create(this);
+        _subscription = await _module.InvokeAsync<int>("subscribe", _reference);
+    }
+
+    [JSInvokable]
+    public Task UpdateStatus(string status, bool canPersist)
+    {
+        _status = status;
+        _canPersist = canPersist;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null)
+        {
+            await _module.InvokeVoidAsync("unsubscribe", _subscription);
+            await _module.DisposeAsync();
+        }
+        _reference?.Dispose();
+    }
+}

@@ -27,6 +27,16 @@ public sealed class LocalizationService(
     {
         ["en-US"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["OfflineAndUpdates"] = "Offline use & updates",
+            ["PwaPreparing"] = "Preparing offline files… Keep this page open until ready.",
+            ["PwaReady"] = "Offline files are ready. Saved rates may be outdated; check their timestamp.",
+            ["PwaUpdateReady"] = "An update is ready. Close all tabs and installed app windows for this site, then reopen to use it.",
+            ["PwaDevelopment"] = "Development preview does not cache offline files. Test offline use with a published build.",
+            ["PwaUnsupported"] = "Offline installation requires HTTPS (or localhost) and a browser with Service Worker support.",
+            ["PwaFailed"] = "Offline files could not be prepared. Reconnect and reopen the page to retry.",
+            ["PwaUnknown"] = "Offline readiness could not be confirmed. Keep a connection until an update is ready.",
+            ["StorageUnavailable"] = "Browser storage is unavailable or full. Changes work in this session but may not survive reopening.",
+            ["RefreshUsingSaved"] = "Live rates unavailable; keeping saved rates.",
             ["ToggleTheme"] = "Switch theme",
             ["CalculatorKeyboard"] = "Calculator",
             ["SystemKeyboard"] = "System keyboard",
@@ -99,6 +109,16 @@ public sealed class LocalizationService(
         },
         ["zh-CN"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["OfflineAndUpdates"] = "离线与更新",
+            ["PwaPreparing"] = "正在准备离线文件，请保持页面打开直到完成。",
+            ["PwaReady"] = "离线文件已就绪。离线汇率可能过期，请留意更新时间。",
+            ["PwaUpdateReady"] = "新版本已准备好。关闭本站所有标签页和已安装应用窗口，再重新打开即可更新。",
+            ["PwaDevelopment"] = "开发预览不缓存离线文件，离线功能需使用发布版验证。",
+            ["PwaUnsupported"] = "离线安装需要 HTTPS（或 localhost）和支持 Service Worker 的浏览器。",
+            ["PwaFailed"] = "离线文件准备失败，请联网后重新打开页面重试。",
+            ["PwaUnknown"] = "暂时无法确认离线状态，请保持联网，等待更新就绪。",
+            ["StorageUnavailable"] = "浏览器存储不可用或已满。本次修改仍可使用，但重新打开后可能无法保留。",
+            ["RefreshUsingSaved"] = "未能获取实时汇率，继续使用已有汇率。",
             ["ToggleTheme"] = "切换主题",
             ["CalculatorKeyboard"] = "计算键盘",
             ["SystemKeyboard"] = "系统键盘",
@@ -171,6 +191,16 @@ public sealed class LocalizationService(
         },
         ["ja-JP"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["OfflineAndUpdates"] = "オフラインと更新",
+            ["PwaPreparing"] = "オフライン用ファイルを準備中です。完了までページを開いたままにしてください。",
+            ["PwaReady"] = "オフライン用ファイルは準備済みです。保存レートの更新日時を確認してください。",
+            ["PwaUpdateReady"] = "更新の準備ができました。このサイトの全タブとインストール済みアプリを閉じ、開き直してください。",
+            ["PwaDevelopment"] = "開発プレビューはオフラインキャッシュを作成しません。公開用ビルドで確認してください。",
+            ["PwaUnsupported"] = "オフライン機能には HTTPS（または localhost）と Service Worker 対応ブラウザーが必要です。",
+            ["PwaFailed"] = "オフライン用ファイルを準備できませんでした。接続後にページを開き直してください。",
+            ["PwaUnknown"] = "オフラインの準備状況を確認できません。更新の準備ができるまで接続を維持してください。",
+            ["StorageUnavailable"] = "ブラウザーの保存領域が使えないか満杯です。変更は現在のセッションのみ有効な場合があります。",
+            ["RefreshUsingSaved"] = "最新レートを取得できないため、保存済みレートを使用します。",
             ["ToggleTheme"] = "テーマを切り替え",
             ["CalculatorKeyboard"] = "計算キーボード",
             ["SystemKeyboard"] = "標準キーボード",

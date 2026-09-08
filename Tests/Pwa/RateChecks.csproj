@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Compile Include="../../Src/CurrencyCalculator.Web/Core/*.cs" Link="Core/%(Filename)%(Extension)" />
+    <Compile Include="../../Src/CurrencyCalculator.Web/Models/*.cs" Link="Models/%(Filename)%(Extension)" />
+    <Compile Include="../../Src/CurrencyCalculator.Web/JsonContext.cs" Link="JsonContext.cs" />
+    <Compile Include="../../Src/CurrencyCalculator.Web/Services/BrowserStorageService.cs" Link="BrowserStorageService.cs" />
+    <Compile Include="../../Src/CurrencyCalculator.Web/Services/Rates/*.cs" Link="Rates/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -29,7 +29,15 @@ public sealed class BrowserStorageService(IJSRuntime jsRuntime)
             return default;
         }
 
-        return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            // 单条缓存损坏不应阻止应用启动，也不清除其他偏好。
+            return default;
+        }
     }
 
     public async Task SetAsync<T>(string key, T value)

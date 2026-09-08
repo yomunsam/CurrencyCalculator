@@ -15,7 +15,7 @@ public sealed class ExchangeRatesSnapshot
     public required ExchangeRatesSourceKind SourceKind { get; init; }
     public required Dictionary<string, decimal> RatesFromBase { get; init; }
 
-    public bool HasRate(string code) => RatesFromBase.ContainsKey(code);
+    public bool HasRate(string code) => RatesFromBase.TryGetValue(code, out var rate) && rate > 0;
 
     public bool HasAllRates(IEnumerable<string> codes)
     {

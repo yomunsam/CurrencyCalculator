@@ -37,10 +37,22 @@ jobs:
       - name: Restore
         run: dotnet restore Src/CurrencyCalculator.slnx
 
+      - name: Setup Node.js for regression checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify event, offline, and rate boundaries
+        run: |
+          node --test Tests/Interactions/*.test.mjs Tests/Pwa/*.test.mjs
+          dotnet run --project Tests/Core/ExpressionChecks.csproj
+          dotnet run --project Tests/Pwa/RateChecks.csproj
+
       - name: Publish
         run: dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Release -o publish
 
-      # No base href rewrite needed — Cloudflare serves at domain root "/"
+      - name: Verify offline artifact integrity
+        run: node .github/scripts/pwa-artifacts.mjs publish/wwwroot
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

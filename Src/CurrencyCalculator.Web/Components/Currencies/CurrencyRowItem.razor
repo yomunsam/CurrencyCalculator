@@ -65,7 +65,7 @@
         </button>
     </div>
     <div id="@_menuId" class="row-menu" popover="manual" role="menu" aria-label="@(Currency.Code + " " + Localize("RowActions"))">
-        <button role="menuitem" class="row-copy" data-copy-value="@CopyValue"
+        <button role="menuitem" class="row-copy" disabled="@(!CanCopy)" data-copy-value="@CopyValue"
                 data-copy-success="@Localize("CopySuccess")" data-copy-failed="@Localize("CopyFailed")">@Localize("CopyValue")</button>
         <button role="menuitem" @onclick="() => OnMove.InvokeAsync(-1)" disabled="@(!CanMoveUp)">@Localize("MoveUp")</button>
         <button role="menuitem" @onclick="() => OnMove.InvokeAsync(1)" disabled="@(!CanMoveDown)">@Localize("MoveDown")</button>
@@ -85,6 +85,7 @@
     [Parameter, EditorRequired] public string ClearTitle { get; set; } = "Clear";
     [Parameter, EditorRequired] public string RemoveTitle { get; set; } = "Remove";
     [Parameter] public bool IsActive { get; set; }
+    [Parameter] public bool CanCopy { get; set; } = true;
     [Parameter] public bool CanRemove { get; set; }
     [Parameter] public bool IsCryptoStale { get; set; }
 

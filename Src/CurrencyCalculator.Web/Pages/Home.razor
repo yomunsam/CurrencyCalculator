@@ -44,6 +44,7 @@
                 DisplayAmount="@GetDisplayAmount(row, currency)"
                 CopyValue="@row.Amount.ToString("0.############################", System.Globalization.CultureInfo.InvariantCulture)"
                 IsActive="rowIndex == ActiveIndex"
+                CanCopy="@(rowIndex == ActiveIndex || IsConversionAvailable(row))"
                 CanRemove="CompareItems.Count > AppSettings.MinCompareItems"
                 IsCryptoStale="IsCryptoStale(currency)"
                 HideCurrencyIcons="HideCurrencyIcons"
@@ -121,7 +122,7 @@
     private List<CompareItemState> CompareItems { get; set; } = [];
     private ExchangeRatesSnapshot? LatestSnapshot { get; set; }
     private int ActiveIndex { get; set; }
-    private bool IsLoading { get; set; }
+    private bool IsLoading { get; set; } = true;
     private bool IsRefreshing { get; set; }
     private string? ErrorMessage { get; set; }
     private bool IsDarkMode { get; set; }
@@ -155,7 +156,7 @@
         await LoadRecentSelectorCodesAsync();
 
         var preferences = await BrowserStorageService.GetAsync<UserPreferences>(AppSettings.PreferencesStorageKey);
-        if (preferences is not null && preferences.Items.Count > 0)
+        if (preferences is { Items.Count: > 0 })
         {
             CurrentLanguage = LocalizationService.Normalize(preferences.Language);
             CompareItems = EnsureValidCompareItems(preferences.Items);
@@ -167,6 +168,9 @@
             ActiveIndex = 0;
         }
 
+        LatestSnapshot = await ExchangeRateService.GetAvailableAsync();
+        RecalculateFromActive();
+        StateHasChanged();
         await LoadRatesAsync(forceRefresh: true);
         RecalculateFromActive();
         await SavePreferencesAsync();
@@ -181,7 +185,7 @@
         await SavePreferencesAsync();
 
         if (string.IsNullOrWhiteSpace(ErrorMessage))
-            await JS.InvokeVoidAsync("ccToast.show", L("RefreshSuccess"), 2000);
+            await JS.InvokeVoidAsync("ccToast.show", L(LatestSnapshot?.SourceKind == ExchangeRatesSourceKind.LiveApi ? "RefreshSuccess" : "RefreshUsingSaved"), 2000);
         else
             await JS.InvokeVoidAsync("ccToast.show", L("RefreshFailed"), 3000);
 
@@ -419,6 +423,7 @@
     private string GetDisplayAmount(CompareItemState row, CurrencyDefinition currency)
     {
         var rowIndex = CompareItems.IndexOf(row);
+        if (rowIndex != ActiveIndex && !IsConversionAvailable(row)) return L("Unavailable");
         if (EditingRowIndex == rowIndex && RawEditingInput is not null)
             return RawEditingInput;
         return FormatAmountForDisplay(row.Amount, currency);
@@ -503,6 +508,9 @@
         _ => System.Globalization.CultureInfo.InvariantCulture
     };
 
+    private bool IsConversionAvailable(CompareItemState row) =>
+        HasRate(CompareItems[ActiveIndex].CurrencyCode) && HasRate(row.CurrencyCode);
+
     private bool HasRate(string code) => LatestSnapshot?.HasRate(code) == true;
     private string L(string key) => LocalizationService.T(CurrentLanguage, key);
 
@@ -542,7 +550,7 @@
     private List<CompareItemState> EnsureValidCompareItems(List<CompareItemState> items)
     {
         var valid = items
-            .Where(item => CurrencyCatalog.IsSupported(item.CurrencyCode))
+            .Where(item => item is not null && CurrencyCatalog.IsSupported(item.CurrencyCode))
             .Take(AppSettings.MaxCompareItems)
             .Select(item => new CompareItemState { CurrencyCode = item.CurrencyCode.ToUpperInvariant(), Amount = item.Amount })
             .ToList();

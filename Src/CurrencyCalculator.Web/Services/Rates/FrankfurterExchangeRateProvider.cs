@@ -17,8 +17,8 @@ public sealed class FrankfurterExchangeRateProvider(HttpClient httpClient, ILogg
     {
         try
         {
-            var symbols = string.Join(',', CurrencyCatalog.FiatCodes.Where(code => !code.Equals("USD", StringComparison.OrdinalIgnoreCase)));
-            var requestUrl = $"https://api.frankfurter.app/latest?from=USD&to={symbols}";
+            // 取提供方支持的币种后再筛选，避免 MOP 等不支持代码令整次请求失败。
+            const string requestUrl = "https://api.frankfurter.app/latest?from=USD";
 
             using var response = await httpClient.GetAsync(requestUrl, cancellationToken);
             response.EnsureSuccessStatusCode();

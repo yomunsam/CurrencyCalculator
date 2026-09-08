@@ -32,38 +32,28 @@ jobs:
       - name: Restore
         run: dotnet restore Src/CurrencyCalculator.slnx
 
+      - name: Setup Node.js for regression checks
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify event, offline, and rate boundaries
+        run: |
+          node --test Tests/Interactions/*.test.mjs Tests/Pwa/*.test.mjs
+          dotnet run --project Tests/Core/ExpressionChecks.csproj
+          dotnet run --project Tests/Pwa/RateChecks.csproj
+
       - name: Publish
         run: dotnet publish Src/CurrencyCalculator.Web/CurrencyCalculator.Web.csproj -c Release -o publish
 
-      # ── GitHub Pages: <base href> must match the repository subpath ──
-      # For a repo named "CurrencyCalculator" hosted at username.github.io/CurrencyCalculator/
-      # we must rewrite <base href="/"> to <base href="/CurrencyCalculator/">.
-      # If we're inside a *.github.io repo (root), the subpath stays "/".
-      - name: Rewrite base href for GitHub Pages subpath
+      - name: Prepare subpath and verify offline artifact integrity
         run: |
           REPO_NAME="${GITHUB_REPOSITORY##*/}"
-          echo "Repository name: $REPO_NAME"
-          # If this is NOT a *.github.io repo, we need to add the subpath
+          BASE_PATH="/"
           if [[ "$REPO_NAME" != *.github.io ]]; then
-            echo "Rewriting base href to /$REPO_NAME/"
-            sed -i "s|<base href=\"/\"|<base href=\"/$REPO_NAME/\"|g" publish/wwwroot/index.html
-          else
-            echo "Root Pages repo detected — base href stays as /"
+            BASE_PATH="/$REPO_NAME/"
           fi
-
-      # After modifying index.html the pre-computed SHA-256 hash in the service-
-      # worker asset manifest no longer matches.  Recalculate it so the service
-      # worker's integrity check doesn't reject the file at runtime.
-      - name: Fix service-worker integrity hash for index.html
-        run: |
-          INDEX_FILE="publish/wwwroot/index.html"
-          MANIFEST="publish/wwwroot/service-worker-assets.js"
-          if [ -f "$INDEX_FILE" ] && [ -f "$MANIFEST" ]; then
-            NEW_HASH="sha256-$(openssl dgst -sha256 -binary "$INDEX_FILE" | openssl base64 -A)"
-            echo "New index.html integrity hash: $NEW_HASH"
-            # Replace the hash for the index.html entry in the manifest JSON
-            sed -i "s|\"hash\":\"sha256-[^\"]*\",\"url\":\"index.html\"|\"hash\":\"$NEW_HASH\",\"url\":\"index.html\"|g" "$MANIFEST"
-          fi
+          node .github/scripts/pwa-artifacts.mjs publish/wwwroot "$BASE_PATH"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
