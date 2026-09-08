@@ -28,8 +28,8 @@ public static partial class MathExpressionEvaluator
         if (decimal.TryParse(cleaned, NumberStyles.Float, CultureInfo.InvariantCulture, out result))
             return true;
 
-        // Must contain at least one operator to be an expression
-        if (!cleaned.AsSpan().ContainsAny("+-*/"))
+        // 括号包裹的单个数值也是完整算式。
+        if (!cleaned.AsSpan().ContainsAny("+-*/()"))
             return false;
 
         try

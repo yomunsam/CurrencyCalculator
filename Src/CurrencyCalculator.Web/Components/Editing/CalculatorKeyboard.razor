@@ -1,0 +1,43 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<section class="calculator-keyboard" @ref="_element" hidden data-never="@NeverUse.ToString().ToLowerInvariant()" aria-label="@Localize("CalculatorKeyboard")">
+    <div class="keyboard-toolbar">
+        <span>@Localize("CalculatorKeyboard")</span>
+        <button data-key="system" title="@Localize("SystemKeyboard")"><i class="bi bi-keyboard"></i> @Localize("SystemKeyboard")</button>
+        <button data-key="hide" aria-label="@Localize("Close")"><i class="bi bi-chevron-down"></i></button>
+    </div>
+    <div class="keyboard-grid">
+        @foreach (var key in Keys)
+        {
+            <button data-key="@key.Value" class="@key.Style" aria-label="@(key.Label is null ? key.Text : Localize(key.Label))">@key.Text</button>
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter] public bool NeverUse { get; set; }
+    [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = default!;
+    private ElementReference _element;
+    private IJSObjectReference? _module;
+    private static readonly (string Value, string Text, string Style, string? Label)[] Keys =
+    [
+        ("clear", "AC", "utility", "Clear"), ("(", "(", "utility", null), (")", ")", "utility", null), ("backspace", "⌫", "utility", "Backspace"),
+        ("7", "7", "", null), ("8", "8", "", null), ("9", "9", "", null), ("/", "÷", "operator", null),
+        ("4", "4", "", null), ("5", "5", "", null), ("6", "6", "", null), ("*", "×", "operator", null),
+        ("1", "1", "", null), ("2", "2", "", null), ("3", "3", "", null), ("-", "−", "operator", null),
+        ("0", "0", "", null), (".", ".", "", null), ("=", "=", "equals", "Calculate"), ("+", "+", "operator", null)
+    ];
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/amount-editor.js");
+        await _module.InvokeVoidAsync("initialize", _element);
+    }
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null) return;
+        await _module.InvokeVoidAsync("dispose");
+        await _module.DisposeAsync();
+    }
+}

@@ -71,7 +71,7 @@ export function initialize(list, reference) {
             if (document.activeElement === row.querySelector('input')) event.preventDefault();
             return;
         }
-        if (!handle && (event.pointerType !== 'touch' || event.target.closest('input, .row-btn'))) return;
+        if (!handle && (!['touch', 'pen'].includes(event.pointerType) || event.target.closest('input, .row-btn'))) return;
         const wasOpen = row === revealed;
         if (revealed && revealed !== row) closeRevealed();
         const currentRows = rows();

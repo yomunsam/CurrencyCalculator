@@ -1,46 +1,6 @@
-.currency-selector {
-    color: var(--cc-text);
-    background: var(--cc-surface);
-    border: 1px solid var(--cc-border);
-    border-radius: 20px 20px 0 0;
-    padding: 0;
-    margin: auto auto 0;
-    width: 100%;
-    max-width: 100%;
-    height: min(60dvh, 560px);
-    max-height: calc(100dvh - 16px);
-    box-shadow: 0 16px 60px #0003;
-    overflow: hidden;
-}
-.currency-selector[open] {
-    display: flex;
-    flex-direction: column;
-}
-.currency-selector::backdrop {
-    background: #0006;
-}
-.selector-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px 8px;
-}
-.selector-header h2 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 0;
-}
-.selector-close {
-    border: 0;
-    background: transparent;
-    color: var(--cc-text-secondary);
-    font-size: 1.6rem;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-}
 .selector-search {
-    padding: 0 20px 16px;
+    flex-shrink: 0;
+    padding: 10px;
     border-bottom: 1px solid var(--cc-border);
 }
 .selector-search input {
@@ -49,17 +9,18 @@
     border-radius: 10px;
     background: var(--cc-bg);
     color: var(--cc-text);
-    padding: 12px;
+    padding: 10px;
     font-size: 1rem;
 }
 .selector-results {
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 4px 8px max(12px, env(safe-area-inset-bottom));
     flex: 1;
 }
 .selector-results h3 {
-    margin: 16px 12px 8px;
+    margin: 12px 10px 4px;
     font-size: .75rem;
     font-weight: 600;
     color: var(--cc-text-secondary);
@@ -68,7 +29,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px 12px;
+    padding: 8px 10px;
+    min-height: 48px;
     width: 100%;
     border: 0;
     border-radius: 10px;
@@ -100,7 +62,7 @@
 }
 .selector-name {
     color: var(--cc-text-secondary);
-    font-size: .9rem;
+    font-size: .75rem;
 }
 .selector-empty {
     padding: 32px 16px;
@@ -111,12 +73,6 @@ button:focus-visible, input:focus-visible {
     outline: 2px solid var(--cc-accent);
     outline-offset: 2px;
 }
-@media (min-width: 576px) {
-    .currency-selector {
-        margin: auto;
-        width: 440px;
-        max-width: calc(100% - 32px);
-        border-radius: 20px;
-        height: min(70dvh, 560px);
-    }
-}
+
+.selector-description { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.selector-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

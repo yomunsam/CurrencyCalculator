@@ -1,0 +1,9 @@
+.currency-comparison-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--cc-border);
+    border-radius: 16px;
+    background: var(--cc-surface);
+    padding: 1px;
+    box-shadow: var(--cc-shadow);
+}

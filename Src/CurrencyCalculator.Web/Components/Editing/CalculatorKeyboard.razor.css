@@ -1,0 +1,65 @@
+.calculator-keyboard {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 120;
+    padding: 8px 12px max(12px, env(safe-area-inset-bottom));
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: 18px 18px 0 0;
+    box-shadow: 0 -8px 40px #0001;
+}
+.calculator-keyboard[hidden] { display: none; }
+.keyboard-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 360px;
+    margin: 0 auto 6px;
+    font-size: .75rem;
+    color: var(--cc-text-secondary);
+}
+.keyboard-toolbar span { flex: 1; }
+.keyboard-toolbar button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    min-height: 36px;
+}
+.keyboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    max-width: 360px;
+    margin: auto;
+}
+.keyboard-grid button {
+    height: 48px;
+    border: 1px solid var(--cc-border);
+    border-radius: 10px;
+    background: var(--cc-bg);
+    color: var(--cc-text);
+    font-size: 1.35rem;
+    font-weight: 500;
+    touch-action: manipulation;
+}
+.keyboard-grid .utility { font-size: 1.05rem; color: var(--cc-text-secondary); }
+.keyboard-grid .operator { color: var(--cc-accent); background: var(--cc-accent-soft); }
+.keyboard-grid .equals { color: white; background: #397ee8; border-color: #397ee8; }
+button:active { filter: brightness(.85); }
+button:focus-visible { outline: 2px solid var(--cc-accent); outline-offset: 2px; }
+@media (min-width: 640px) {
+    .calculator-keyboard {
+        left: auto;
+        right: var(--workspace-edge);
+        bottom: 24px;
+        width: var(--side-panel-width);
+        border-radius: 16px;
+    }
+}
+@media (max-height: 520px) {
+    .keyboard-grid button { height: 36px; }
+    .keyboard-grid { gap: 4px; }
+}

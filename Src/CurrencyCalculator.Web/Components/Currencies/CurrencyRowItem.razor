@@ -44,13 +44,19 @@
         }
 
         <div class="amount-area">
-            <input class="amount-input" type="text" inputmode="decimal" @ref="_inputRef"
-                   style="--amount-characters: @(Math.Max(3, DisplayAmount.Length + 1))"
-                   value="@DisplayAmount"
-                   placeholder="0" aria-label="@(Currency.Code + " " + Localize("Amount"))"
-                   @onfocus="HandleFocus"
-                   @onblur="OnBlur"
-                   @oninput="OnInput" />
+            @if (IsActive)
+            {
+                <input class="amount-input" type="text" inputmode="none" @ref="_inputRef"
+                       style="--amount-characters: @(Math.Max(3, DisplayAmount.Length + 1))"
+                       value="@DisplayAmount" placeholder="0" autocomplete="off" spellcheck="false"
+                       aria-label="@(Currency.Code + " " + Localize("Amount"))"
+                       @onfocus="HandleFocus" @oninput="OnInput" @onkeydown="HandleKeyDown" />
+            }
+            else
+            {
+                <button class="amount-label" @onclick="ActivateAmount" @onclick:stopPropagation="true"
+                        aria-label="@(Currency.Code + " " + Localize("Amount"))">@(string.IsNullOrEmpty(DisplayAmount) ? "0" : DisplayAmount)</button>
+            }
         </div>
 
         <button class="row-btn row-clear @(!IsActive ? "is-hidden" : "")" disabled="@(!IsActive)"
@@ -89,7 +95,7 @@
     [Parameter, EditorRequired] public EventCallback OnOpenSelector { get; set; }
     [Parameter, EditorRequired] public EventCallback<bool> OnShowCryptoWarning { get; set; }
     [Parameter, EditorRequired] public EventCallback OnFocus { get; set; }
-    [Parameter, EditorRequired] public EventCallback<FocusEventArgs> OnBlur { get; set; }
+    [Parameter] public EventCallback OnCommit { get; set; }
     [Parameter, EditorRequired] public EventCallback<ChangeEventArgs> OnInput { get; set; }
     [Parameter, EditorRequired] public EventCallback OnClear { get; set; }
     [Parameter, EditorRequired] public EventCallback OnRemove { get; set; }
@@ -97,18 +103,23 @@
     [Parameter] public bool CanMoveUp { get; set; }
     [Parameter] public bool CanMoveDown { get; set; }
     [Parameter] public EventCallback<int> OnMove { get; set; }
-    private async Task HandleFocus()
+    private Task HandleFocus() => OnFocus.InvokeAsync();
+
+    private async Task ActivateAmount()
     {
+        await OnSetActive.InvokeAsync();
         await OnFocus.InvokeAsync();
         _pendingCursorToEnd = true;
     }
 
+    private Task HandleKeyDown(KeyboardEventArgs args) =>
+        args.Key == "Enter" ? OnCommit.InvokeAsync() : Task.CompletedTask;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_pendingCursorToEnd)
-        {
-            _pendingCursorToEnd = false;
-            await JS.InvokeVoidAsync("ccFocus.cursorToEnd", _inputRef);
-        }
+        if (!_pendingCursorToEnd || !IsActive) return;
+        _pendingCursorToEnd = false;
+        await using var module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/amount-editor.js");
+        await module.InvokeVoidAsync("focusAmount", _inputRef);
     }
 }
