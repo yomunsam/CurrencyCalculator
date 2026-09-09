@@ -158,13 +158,14 @@ html { scroll-padding-bottom: var(--keyboard-space, 0px); }
 }
 
 .cc-row .currency-icon-crypto {
-    font-size: 1.45rem;
-    line-height: 1;
     flex-shrink: 0;
     width: 28px;
-    text-align: center;
-    font-weight: 700;
-    color: var(--cc-accent);
+    height: 28px;
+    object-fit: contain;
+    border-radius: 50%;
+    pointer-events: none;
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
 }
 
 .cc-row .currency-info {

@@ -46,7 +46,7 @@ class Surface {
 
 function fixture(t, never = false) {
     globalThis.document = new Surface();
-    document.documentElement = { style: { setProperty() {}, removeProperty() {} } };
+    document.documentElement = { dataset: {}, style: { setProperty() {}, removeProperty() {} } };
     let onPreference;
     globalThis.MutationObserver = class {
         constructor(callback) { onPreference = callback; }
@@ -120,7 +120,7 @@ test('内置键盘编辑当前选区，等号只发 Enter，不追加结果文�
     assert.equal(f.input.events.at(-1).key, 'Enter');
 });
 
-test('系统键盘逃逸保留文本选区，当前会话后续触控沿用系统键盘', t => {
+test('系统键盘切换保留文本选区，下次笔点击重新打开内置键盘', t => {
     const f = fixture(t);
     f.pointer('touch');
     f.input.focus();
@@ -131,7 +131,10 @@ test('系统键盘逃逸保留文本选区，当前会话后续触控沿用系�
     assert.equal(f.input.selectionEnd, 3);
     assert.equal(f.input.inputMode, 'text');
     f.pointer('pen');
-    assert.equal(f.keyboard.hidden, true);
+    assert.equal(f.keyboard.hidden, false);
+    assert.equal(f.input.inputMode, 'none');
+    assert.equal(f.input.selectionStart, 1);
+    assert.equal(f.input.selectionEnd, 3);
 });
 
 test('永不使用设置压过触控事件，切换设置立即关闭内置键盘', t => {
@@ -146,4 +149,41 @@ test('永不使用设置压过触控事件，切换设置立即关闭内置键�
     f.preference(true);
     assert.equal(f.keyboard.hidden, true);
     assert.equal(f.input.inputMode, 'text');
+});
+
+test('点击键盘留白和键间区域阻止默认失焦', t => {
+    const f = fixture(t);
+    f.pointer('touch');
+    f.input.focus();
+    let prevented = false;
+    document.emit('pointerdown', { target: new Surface('', f.keyboard), pointerType: 'touch', preventDefault() { prevented = true; } });
+    assert.equal(prevented, true);
+    assert.equal(f.keyboard.hidden, false);
+    assert.equal(document.activeElement, f.input);
+});
+
+for (const type of ['touch', 'pen']) {
+    test(`系统键盘之后 ${type} 点击另一金额也打开内置键盘`, t => {
+        const f = fixture(t);
+        f.pointer(type);
+        f.input.focus();
+        f.key('system');
+        f.pointer(type, new Surface('amount-label'));
+        focusAmount(f.input);
+        assert.equal(f.keyboard.hidden, false);
+        assert.equal(f.input.inputMode, 'none');
+    });
+}
+
+test('永不使用设置在系统键盘切换后仍压过反复触控和笔点击', t => {
+    const f = fixture(t);
+    f.pointer('touch');
+    f.input.focus();
+    f.key('system');
+    f.preference(true);
+    for (const type of ['touch', 'pen']) {
+        f.pointer(type);
+        assert.equal(f.keyboard.hidden, true);
+        assert.equal(f.input.inputMode, 'text');
+    }
 });

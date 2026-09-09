@@ -114,7 +114,6 @@ export function initialize(list, reference) {
             g.row.classList.add(g.kind === 'drag' ? 'is-dragging' : 'is-swiping');
         }
         if (g.kind === 'swipe') {
-            if (g.row.dataset.canRemove !== 'true') return;
             const offset = Math.max(-88, Math.min(0, dx - (g.wasOpen ? 88 : 0)));
             g.row.querySelector('.cc-row').style.transform = `translateX(${offset}px)`;
             return;
@@ -136,7 +135,7 @@ export function initialize(list, reference) {
         if (!g || event.pointerId !== g.id) return;
         if (g.active) suppressedClick = g.row;
         if (g.kind === 'menu') event.preventDefault();
-        if (g.kind === 'swipe' && g.active && g.row.dataset.canRemove === 'true') {
+        if (g.kind === 'swipe' && g.active) {
             const dx = event.clientX - g.x;
             reveal(g.row, g.wasOpen ? dx < 40 : dx < -40);
         }

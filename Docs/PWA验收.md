@@ -1,5 +1,15 @@
 # PWA 检查与验收
 
+## 2026-09-09 自定义域名导航修复
+
+- 线上核实：Cloudflare 域名的 `/index.html` 返回 308 到 `/`，GitHub Pages 的 `/CurrencyCalculator/index.html` 返回 200。Chrome 故障页显示 `ERR_FAILED`。
+- 原 worker 将跟随重定向的入口响应缓存后直接用于导航；浏览器导航的重定向模式可能拒绝此响应。现在仅对带重定向记录的缓存入口重建 Response，保留正文、状态和响应头，不重新联网，也不绕过安装时的哈希校验。
+- Node 回归覆盖根路径、子路径、查询参数和已存在的重定向缓存。模拟检查不代替手机和实际部署验收。
+- 部署后先在线访问，等待更新下载，然后关闭该域名的所有标签页和已安装 PWA 窗口再打开。在“关于”确认离线就绪，连续普通刷新，再断网刷新及关闭后从桌面图标冷启动。
+- 若旧 worker 仍使页面打不开，桌面 Chrome 可先用 Ctrl+Shift+R 在线加载并等待更新；随后关闭所有本站窗口再打开。不要以清除站点数据作为首选，这会丢失本地偏好和汇率缓存。
+
+机制参考：[Cloudflare Pages HTML 重定向](https://developers.cloudflare.com/pages/configuration/serving-pages/) 与 [Service Worker Fetch 处理规范](https://w3c.github.io/ServiceWorker/#fetch-event-respondwith)。
+
 ## 本轮修正
 
 1. 发布 worker 不再在安装时调用 `skipWaiting` 或在激活时强制 `clients.claim`。导航和静态资源读取同一发布快照，避免网络返回新 HTML 而程序集仍来自旧缓存。新版本在旧窗口全部关闭后自然激活。

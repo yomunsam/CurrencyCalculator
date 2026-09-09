@@ -25,8 +25,9 @@ public static class CurrencyCatalog
         Fiat("TWD", "tw", 0, "New Taiwan Dollar", "新台币", "台湾ドル"),
         Fiat("PHP", "ph", 2, "Philippine Peso", "菲律宾比索", "フィリピン・ペソ"),
         Fiat("KRW", "kr", 0, "South Korean Won", "韩元", "韓国ウォン"),
-        Crypto("BTC", "₿", 8, "Bitcoin", "比特币", "ビットコイン"),
-        Crypto("ETH", "Ξ", 8, "Ethereum", "以太坊", "イーサリアム")
+        Crypto("BTC", "btc", 8, "Bitcoin", "比特币", "ビットコイン"),
+        Crypto("ETH", "eth", 8, "Ethereum", "以太坊", "イーサリアム"),
+        Crypto("SOL", "sol", 8, "Solana", "索拉纳", "ソラナ")
     ];
 
     private static readonly Dictionary<string, CurrencyDefinition> ByCodeInternal =

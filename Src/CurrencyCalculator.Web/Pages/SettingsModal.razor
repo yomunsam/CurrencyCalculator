@@ -1,7 +1,7 @@
 <AdaptivePanel IsOpen="IsOpen" Title="@Localize("Settings")" CloseLabel="@Localize("Close")" OnClose="OnClose">
     <div class="settings-content">
         <div class="settings-item">
-            <label for="settings-language" class="settings-item-label">@Localize("Language")</label>
+            <label for="settings-language" class="settings-item-label"><i class="bi bi-translate" aria-hidden="true"></i> @Localize("Language")</label>
             <select id="settings-language" value="@CurrentLanguage" @onchange="e => OnLanguageChanged.InvokeAsync(e.Value?.ToString() ?? CurrentLanguage)">
                 @foreach (var language in LocalizationService.Languages)
                 {

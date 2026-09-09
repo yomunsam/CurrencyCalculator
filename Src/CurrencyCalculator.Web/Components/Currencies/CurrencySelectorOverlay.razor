@@ -32,7 +32,8 @@
                                 }
                                 else
                                 {
-                                    <span class="selector-symbol" aria-hidden="true">@item.Icon</span>
+                                    <img class="selector-crypto" src="img/crypto_icons/@(item.Icon).svg"
+                                         alt="" loading="lazy" draggable="false" />
                                 }
                             }
                             <span class="selector-description"><span class="selector-code">@item.Code</span><span class="selector-name">@item.GetName(CurrentLanguage)</span></span>

@@ -47,7 +47,18 @@ async function onActivate() {
 async function onFetch(request) {
     const cache = await caches.open(cacheName);
     if (request.mode === 'navigate') {
-        return (await cache.match(indexUrl)) || fetch(request);
+        const cached = await cache.match(indexUrl);
+        if (!cached) return fetch(request);
+        // Cloudflare Pages 会将 index.html 重定向到目录；导航不能复用带重定向记录的响应。
+        // 保留已校验的快照内容，仅移除响应的重定向元数据，也适用于已存在的缓存。
+        if (cached.redirected) {
+            return new Response(cached.body, {
+                status: cached.status,
+                statusText: cached.statusText,
+                headers: cached.headers
+            });
+        }
+        return cached;
     }
     const url = new URL(request.url);
     url.search = '';

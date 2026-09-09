@@ -164,7 +164,7 @@ test('纵向滚动、输入框选区、鼠标横拖不会展开删除', async ()
     f.cleanup();
 });
 
-test('取消滑动不展开删除，最低行数限制不被手势绕过', async () => {
+test('取消滑动不展开删除，最低行数仍可展开禁用的删除按钮', async () => {
     const f = fixture();
     const card = f.rows[0].querySelector('.cc-row');
     await f.send('pointerdown', card, { pointerType: 'touch' });
@@ -172,11 +172,14 @@ test('取消滑动不展开删除，最低行数限制不被手势绕过', async
     await f.send('pointercancel', card);
     assert.equal(f.rows[0].classList.contains('is-revealed'), false);
     f.rows[0].dataset.canRemove = 'false';
+    const removeButton = f.rows[0].querySelector('.row-swipe-delete');
+    removeButton.disabled = true;
     await f.send('pointerdown', card, { pointerType: 'touch' });
     await f.send('pointermove', card, { clientX: 0 });
     await f.send('pointerup', card, { clientX: 0 });
-    assert.equal(f.rows[0].classList.contains('is-revealed'), false);
+    assert.equal(f.rows[0].classList.contains('is-revealed'), true);
     assert.deepEqual(f.calls, []);
+    assert.equal(removeButton.disabled, true);
     f.cleanup();
 });
 

@@ -38,13 +38,24 @@ export function initialize(keyboard) {
     document.addEventListener('pointerdown', event => {
         if (event.isPrimary === false || event.button > 0) return;
         if (keyboard.contains(event.target)) {
-            if (event.target.closest('button')) event.preventDefault();
+            // 包括键间空隙和面板留白，避免默认行为让金额框失焦并收起键盘。
+            event.preventDefault();
             return;
         }
+        const returningFromSystem = state.system && isTouch(event.pointerType);
+        state.system = false;
         state.pointer = event.pointerType;
         const input = event.target.closest('.amount-input');
         if (input) {
-            configure(input);
+            const custom = configure(input);
+            if (returningFromSystem && custom && document.activeElement === input) {
+                // 已聚焦的原生输入需要重新聚焦，才能让系统键盘收起。
+                const start = input.selectionStart;
+                const end = input.selectionEnd;
+                input.blur();
+                input.focus({ preventScroll: true });
+                input.setSelectionRange(start, end);
+            }
             if (document.activeElement === input) show(input);
         } else if (!event.target.closest('.amount-label, .row-clear')) {
             hide();
@@ -61,7 +72,9 @@ export function initialize(keyboard) {
         });
     }, options);
     document.addEventListener('keydown', event => {
-        if (event.key === 'Tab') state.pointer = 'keyboard';
+        if (event.key === 'Tab') {
+            state.pointer = 'keyboard';
+        }
         if (event.key === 'Enter' && event.isComposing && event.target.matches('.amount-input')) {
             event.stopPropagation();
         }

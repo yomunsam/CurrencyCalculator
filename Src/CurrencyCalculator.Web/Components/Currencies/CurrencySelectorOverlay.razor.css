@@ -50,11 +50,11 @@
     object-fit: cover;
     border-radius: 3px;
 }
-.selector-symbol {
-    width: 28px;
-    text-align: center;
-    color: var(--cc-accent);
-    font-size: 1.25rem;
+.selector-item img.selector-crypto {
+    height: 28px;
+    object-fit: contain;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 .selector-code {
     font-weight: 700;

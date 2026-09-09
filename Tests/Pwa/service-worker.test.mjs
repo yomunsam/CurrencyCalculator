@@ -24,7 +24,7 @@ function setup(path = '/', existing = new Map(), failInstall = false) {
         };
     }
     const context = {
-        URL, Request,
+        URL, Request, Response,
         self: {
             location: { href: `${base}service-worker.js` },
             assetsManifest: { version: 'new', assets: ['index.html', 'css/app.css', 'icons.woff2', 'debug.pdb', 'service-worker.js'].map(url => ({ url, hash: 'sha256-test' })) },
@@ -61,6 +61,29 @@ for (const path of ['/', '/CurrencyCalculator/']) {
         assert.equal(await f.get('?from=installed'), `cached:https://example.test${path}index.html`);
         assert.equal(await f.get('index.html?x=1'), `cached:https://example.test${path}index.html`);
         assert.equal(await f.get('icons.woff2?v=123', 'cors'), `cached:https://example.test${path}icons.woff2`);
+        assert.deepEqual(f.network, []);
+    });
+}
+
+for (const path of ['/', '/CurrencyCalculator/']) {
+    test(`${path} 已缓存的重定向入口可用于刷新和离线导航`, async () => {
+        const f = setup(path);
+        await f.lifecycle('install');
+        const entries = f.buckets.get(`cc-offline-${encodeURIComponent(path)}-new`);
+        const html = '<!doctype html><title>cached release</title>';
+        // 模拟 Cache API 返回跟随 index.html 重定向后保存的响应。
+        for (const target of ['', '?from=installed', 'index.html']) {
+            const redirected = new Response(html, {
+                headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            });
+            Object.defineProperty(redirected, 'redirected', { value: true });
+            entries.set(`https://example.test${path}index.html`, redirected);
+            const response = await f.get(target);
+            assert.equal(response.redirected, false);
+            assert.equal(response.status, 200);
+            assert.equal(response.headers.get('Content-Type'), 'text/html; charset=utf-8');
+            assert.equal(await response.text(), html);
+        }
         assert.deepEqual(f.network, []);
     });
 }

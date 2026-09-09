@@ -11,12 +11,12 @@ public sealed class LocalizationService(
     BrowserStorageService storageService)
 {
     // ── Supported languages ────────────────────────────────────────────
-    // Each entry: code → display label, default currency pair
+    // 每项包含语言代码、显示名称和首次使用的默认币种。
     public static readonly IReadOnlyList<LanguageEntry> Languages =
     [
-        new("en-US", "English", ["USD", "CNY"]),
-        new("zh-CN", "简体中文", ["CNY", "USD"]),
-        new("ja-JP", "日本語", ["JPY", "USD"])
+        new("en-US", "English", ["USD", "EUR", "ETH"]),
+        new("zh-CN", "简体中文", ["USD", "HKD", "ETH"]),
+        new("ja-JP", "日本語", ["JPY", "USD", "ETH"])
     ];
 
     public static IReadOnlyCollection<string> SupportedLanguages { get; } =
@@ -301,7 +301,7 @@ public sealed class LocalizationService(
     {
         var normalized = Normalize(language);
         var entry = Languages.FirstOrDefault(l => l.Code.Equals(normalized, StringComparison.OrdinalIgnoreCase));
-        return entry?.DefaultCurrencies ?? ["USD", "CNY"];
+        return entry?.DefaultCurrencies ?? ["USD", "EUR", "ETH"];
     }
 
     public static string Normalize(string? language)

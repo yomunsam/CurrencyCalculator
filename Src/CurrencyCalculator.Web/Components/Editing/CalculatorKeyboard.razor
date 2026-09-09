@@ -22,11 +22,11 @@
     private IJSObjectReference? _module;
     private static readonly (string Value, string Text, string Style, string? Label)[] Keys =
     [
-        ("clear", "AC", "utility", "Clear"), ("(", "(", "utility", null), (")", ")", "utility", null), ("backspace", "⌫", "utility", "Backspace"),
-        ("7", "7", "", null), ("8", "8", "", null), ("9", "9", "", null), ("/", "÷", "operator", null),
-        ("4", "4", "", null), ("5", "5", "", null), ("6", "6", "", null), ("*", "×", "operator", null),
-        ("1", "1", "", null), ("2", "2", "", null), ("3", "3", "", null), ("-", "−", "operator", null),
-        ("0", "0", "", null), (".", ".", "", null), ("=", "=", "equals", "Calculate"), ("+", "+", "operator", null)
+        ("clear", "AC", "utility", "Clear"), ("(", "(", "", null), (")", ")", "", null), ("backspace", "⌫", "utility", "Backspace"),
+        ("/", "÷", "operator", null), ("7", "7", "", null), ("8", "8", "", null), ("9", "9", "", null),
+        ("*", "×", "operator", null), ("4", "4", "", null), ("5", "5", "", null), ("6", "6", "", null),
+        ("-", "−", "operator", null), ("1", "1", "", null), ("2", "2", "", null), ("3", "3", "", null),
+        ("+", "+", "operator", null), ("0", "0", "", null), (".", ".", "", null), ("=", "=", "equals", "Calculate")
     ];
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
