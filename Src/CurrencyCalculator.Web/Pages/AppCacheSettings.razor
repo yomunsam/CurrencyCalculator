@@ -1,0 +1,46 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="settings-item">
+    <div class="settings-item-text">
+        <span class="settings-item-label">@Localize("ClearAppCache")</span>
+        <span class="settings-item-desc">@Localize("ClearAppCacheDesc")</span>
+        @if (_failed)
+        {
+            <span class="settings-item-desc" role="alert">@Localize("ClearAppCacheFailed")</span>
+        }
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" disabled="@_busy" @onclick="ClearAsync">@Localize("ClearAppCacheAction")</button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Func<string, string> Localize { get; set; } = default!;
+    private IJSObjectReference? _module;
+    private bool _busy;
+    private bool _failed;
+
+    private async Task ClearAsync()
+    {
+        if (_busy) return;
+        _busy = true;
+        _failed = false;
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/pwa.js");
+            await _module.InvokeVoidAsync("clearAppCache", Localize("ClearAppCacheConfirm"));
+        }
+        catch (JSException)
+        {
+            _failed = true;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is not null) await _module.DisposeAsync();
+    }
+}

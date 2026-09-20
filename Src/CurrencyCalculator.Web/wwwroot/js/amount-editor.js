@@ -63,13 +63,9 @@ export function initialize(keyboard) {
     }, { ...options, capture: true });
     document.addEventListener('focusin', event => {
         if (event.target.matches('.amount-input')) show(event.target);
-        else if (!keyboard.contains(event.target)) hide();
-    }, options);
-    document.addEventListener('focusout', () => {
-        queueMicrotask(() => {
-            if (!state) return;
-            if (!document.activeElement?.matches('.amount-input') && !keyboard.contains(document.activeElement)) hide();
-        });
+        // 移动端点击留白可能让焦点落到 body，不把这种失焦视为主动关闭。
+        else if (event.target !== document.body && event.target !== document.documentElement
+            && !keyboard.contains(event.target)) hide();
     }, options);
     document.addEventListener('keydown', event => {
         if (event.key === 'Tab') {
@@ -113,7 +109,10 @@ export function initialize(keyboard) {
         input.setSelectionRange(edited.caret, edited.caret);
         input.dispatchEvent(new Event('input', { bubbles: true }));
     }, options);
+    let neverUse = keyboard.dataset.never;
     const observer = new MutationObserver(() => {
+        if (keyboard.dataset.never === neverUse) return;
+        neverUse = keyboard.dataset.never;
         state.system = false;
         if (state.input?.isConnected) configure(state.input);
         hide();

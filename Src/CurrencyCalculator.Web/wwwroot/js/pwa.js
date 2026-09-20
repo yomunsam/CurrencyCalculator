@@ -4,6 +4,7 @@ let status = 'PwaPreparing';
 let registration;
 let started = false;
 let lastCheck = 0;
+let clearing = false;
 
 function notify() {
     for (const reference of subscribers.values()) {
@@ -73,7 +74,7 @@ function reportFailure(error) {
 }
 
 function checkForUpdate() {
-    if (document.visibilityState === 'hidden' || Date.now() - lastCheck < 60000) return;
+    if (clearing || document.visibilityState === 'hidden' || Date.now() - lastCheck < 60000) return;
     lastCheck = Date.now();
     if (!registration) register();
     else registration.update().then(inspect).catch(reportFailure);
@@ -100,4 +101,40 @@ export function subscribe(reference) {
 
 export function unsubscribe(id) {
     subscribers.delete(id);
+}
+
+export async function clearAppCache(confirmation) {
+    if (clearing || !window.confirm(confirmation)) return;
+    clearing = true;
+    try {
+        const base = new URL('./', document.baseURI);
+        // 目录请求不命中 worker 的资源列表；先确认网络可达，避免离线清理后无法启动。
+        const response = await fetch(base, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+        if (!response.ok) throw new Error('App network check failed');
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const item of registrations) {
+                if (item.scope === base.href && !await item.unregister()) {
+                    throw new Error('App worker could not be unregistered');
+                }
+            }
+        }
+        if ('caches' in window) {
+            const prefix = `cc-offline-${encodeURIComponent(base.pathname)}-`;
+            const indexUrl = new URL('index.html', base).href;
+            for (const key of await caches.keys()) {
+                let belongsToApp = key.startsWith(prefix);
+                if (!belongsToApp && key.startsWith('offline-cache-')) {
+                    const legacy = await caches.open(key);
+                    belongsToApp = Boolean(await legacy.match(indexUrl));
+                }
+                if (belongsToApp) await caches.delete(key);
+            }
+        }
+        // 不清空 localStorage，也不触碰同域其他应用的缓存或注册。
+        window.location.reload();
+    } catch (error) {
+        clearing = false;
+        throw error;
+    }
 }

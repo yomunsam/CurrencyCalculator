@@ -27,6 +27,11 @@ public sealed class LocalizationService(
     {
         ["en-US"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["ClearAppCache"] = "Clear App cache data",
+            ["ClearAppCacheDesc"] = "Remove offline app files and reload. Settings and saved rates are kept.",
+            ["ClearAppCacheAction"] = "Clear",
+            ["ClearAppCacheConfirm"] = "Clear offline App files and reload? Your currencies, order, settings and saved rates will be kept. Connect to the internet and close other App windows first. Offline files will need to download again.",
+            ["ClearAppCacheFailed"] = "Cleanup could not finish. Check your connection and storage permissions, then retry.",
             ["OfflineAndUpdates"] = "Offline use & updates",
             ["PwaPreparing"] = "Preparing offline files… Keep this page open until ready.",
             ["PwaReady"] = "Offline files are ready. Saved rates may be outdated; check their timestamp.",
@@ -109,6 +114,11 @@ public sealed class LocalizationService(
         },
         ["zh-CN"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["ClearAppCache"] = "清理App缓存数据",
+            ["ClearAppCacheDesc"] = "清理离线程序文件并重新加载，保留设置与已保存汇率。",
+            ["ClearAppCacheAction"] = "清理",
+            ["ClearAppCacheConfirm"] = "确定清理 App 离线程序文件并重新加载吗？币种、排序、设置与已保存汇率会保留。请先联网并关闭其他 App 窗口，清理后需要重新下载离线文件。",
+            ["ClearAppCacheFailed"] = "清理未完成，请检查网络和存储权限后重试。",
             ["OfflineAndUpdates"] = "离线与更新",
             ["PwaPreparing"] = "正在准备离线文件，请保持页面打开直到完成。",
             ["PwaReady"] = "离线文件已就绪。离线汇率可能过期，请留意更新时间。",
@@ -191,6 +201,11 @@ public sealed class LocalizationService(
         },
         ["ja-JP"] = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["ClearAppCache"] = "Appのキャッシュデータを削除",
+            ["ClearAppCacheDesc"] = "オフライン用ファイルを削除して再読み込みします。設定と保存済みレートは保持します。",
+            ["ClearAppCacheAction"] = "削除",
+            ["ClearAppCacheConfirm"] = "Appのオフライン用ファイルを削除して再読み込みしますか？通貨、並び順、設定、保存済みレートは保持します。ネットに接続し、他のAppウィンドウを閉じてください。オフライン用ファイルの再ダウンロードが必要です。",
+            ["ClearAppCacheFailed"] = "削除を完了できませんでした。接続とストレージの権限を確認して再試行してください。",
             ["OfflineAndUpdates"] = "オフラインと更新",
             ["PwaPreparing"] = "オフライン用ファイルを準備中です。完了までページを開いたままにしてください。",
             ["PwaReady"] = "オフライン用ファイルは準備済みです。保存レートの更新日時を確認してください。",
